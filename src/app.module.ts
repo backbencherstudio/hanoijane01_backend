@@ -14,12 +14,11 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 // import { ThrottlerBehindProxyGuard } from './common/guard/throttler-behind-proxy.guard';
-import { AbilityModule } from './ability/ability.module';
 import { MailModule } from './mail/mail.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { AdminModule } from './modules/admin/admin.module';
-import { ChatModule } from './modules/chat/chat.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { PrometheusModule } from './prometheus/prometheus.module';
 import { RepositoryModule } from './common/repository/repository.module';
 
@@ -71,12 +70,11 @@ import { RepositoryModule } from './common/repository/repository.module';
     PrismaModule,
     RepositoryModule,
     AuthModule,
-    AbilityModule,
     MailModule,
     ApplicationModule,
     AdminModule,
-    ChatModule,
     PaymentModule,
+    NotificationModule,
     PrometheusModule,
   ],
   controllers: [AppController],

@@ -18,19 +18,19 @@ export async function SoftdeleteMiddleware(params, next) {
       // Change to findFirst - you cannot filter
       // by anything except ID / unique with findUnique
       params.action = 'findFirst';
-      // Add 'deleted_at' filter
+      // Add 'deletedAt' filter
       // ID filter maintained
-      params.args.where['deleted_at'] = null;
+      params.args.where['deletedAt'] = null;
     }
     if (params.action === 'findMany') {
       // Find many queries
       if (params.args.where) {
-        if (params.args.where.deleted_at == undefined) {
-          // Exclude deleted_at records if they have not been explicitly requested
-          params.args.where['deleted_at'] = null;
+        if (params.args.where.deletedAt == undefined) {
+          // Exclude deletedAt records if they have not been explicitly requested
+          params.args.where['deletedAt'] = null;
         }
       } else {
-        params.args['where'] = { deleted_at: null };
+        params.args['where'] = { deletedAt: null };
       }
     }
 
@@ -40,13 +40,13 @@ export async function SoftdeleteMiddleware(params, next) {
       params.action = 'updateMany';
       // Add 'deleted' filter
       // ID filter maintained
-      params.args.where['deleted_at'] = false;
+      params.args.where['deletedAt'] = false;
     }
     if (params.action == 'updateMany') {
       if (params.args.where != undefined) {
-        params.args.where['deleted_at'] = false;
+        params.args.where['deletedAt'] = false;
       } else {
-        params.args['where'] = { deleted_at: false };
+        params.args['where'] = { deletedAt: false };
       }
     }
 
@@ -55,15 +55,15 @@ export async function SoftdeleteMiddleware(params, next) {
       // Delete queries
       // Change action to an update
       params.action = 'update';
-      params.args['data'] = { deleted_at: date };
+      params.args['data'] = { deletedAt: date };
     }
     if (params.action == 'deleteMany') {
       // Delete many queries
       params.action = 'updateMany';
       if (params.args.data != undefined) {
-        params.args.data['deleted_at'] = true;
+        params.args.data['deletedAt'] = true;
       } else {
-        params.args['data'] = { deleted_at: date };
+        params.args['data'] = { deletedAt: date };
       }
     }
   }

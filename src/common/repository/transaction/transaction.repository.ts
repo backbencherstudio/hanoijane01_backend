@@ -9,21 +9,21 @@ export class TransactionRepository {
    * @returns
    */
   async createTransaction({
-    booking_id,
+    orderId,
     amount,
     currency,
-    reference_number,
+    referenceNumber,
     status = 'pending',
   }: {
-    booking_id: string;
+    orderId: string;
     amount?: number;
     currency?: string;
-    reference_number?: string;
+    referenceNumber?: string;
     status?: string;
   }) {
     const data = {};
-    if (booking_id) {
-      data['booking_id'] = booking_id;
+    if (orderId) {
+      data['orderId'] = orderId;
     }
     if (amount) {
       data['amount'] = Number(amount);
@@ -31,8 +31,8 @@ export class TransactionRepository {
     if (currency) {
       data['currency'] = currency;
     }
-    if (reference_number) {
-      data['reference_number'] = reference_number;
+    if (referenceNumber) {
+      data['referenceNumber'] = referenceNumber;
     }
     if (status) {
       data['status'] = status;
@@ -49,58 +49,35 @@ export class TransactionRepository {
    * @returns
    */
   async updateTransaction({
-    reference_number,
+    referenceNumber,
     status = 'pending',
-    paid_amount,
-    paid_currency,
-    raw_status,
+    paidAmount,
+    paidCurrency,
+    rawStatus,
   }: {
-    reference_number: string;
+    referenceNumber: string;
     status: string;
-    paid_amount?: number;
-    paid_currency?: string;
-    raw_status?: string;
+    paidAmount?: number;
+    paidCurrency?: string;
+    rawStatus?: string;
   }) {
     const data = {};
-    const order_data = {};
     if (status) {
       data['status'] = status;
-      order_data['payment_status'] = status;
     }
-    if (paid_amount) {
-      data['paid_amount'] = Number(paid_amount);
-      order_data['paid_amount'] = Number(paid_amount);
+    if (paidAmount) {
+      data['paidAmount'] = Number(paidAmount);
     }
-    if (paid_currency) {
-      data['paid_currency'] = paid_currency;
-      order_data['paid_currency'] = paid_currency;
+    if (paidCurrency) {
+      data['paidCurrency'] = paidCurrency;
     }
-    if (raw_status) {
-      data['raw_status'] = raw_status;
-      order_data['payment_raw_status'] = raw_status;
+    if (rawStatus) {
+      data['rawStatus'] = rawStatus;
     }
-
-    const paymentTransaction = await this.prisma.paymentTransaction.findMany({
-      where: {
-        reference_number: reference_number,
-      },
-    });
-
-    // update booking status
-    // if (paymentTransaction.length > 0) {
-    //   await prisma.order.update({
-    //     where: {
-    //       id: paymentTransaction[0].order_id,
-    //     },
-    //     data: {
-    //       ...order_data,
-    //     },
-    //   });
-    // }
 
     return await this.prisma.paymentTransaction.updateMany({
       where: {
-        reference_number: reference_number,
+        referenceNumber: referenceNumber,
       },
       data: {
         ...data,

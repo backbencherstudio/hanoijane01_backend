@@ -21,19 +21,52 @@ model Account {
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  type              String?
-  provider          String?
-  providerAccountId String?   @map("provider_account_id")
-  refreshToken      String?   @map("refresh_token")
-  accessToken       String?   @map("access_token")
-  expiresAt         DateTime? @map("expires_at")
-  tokenType         String?   @map("token_type")
-  scope             String?
-  idToken           String?   @map("id_token")
-  sessionState      String?   @map("session_state")
+  accountId    String @map("account_id")
+  providerId   String @map("provider_id")
+  accessToken  String? @map("access_token")
+  refreshToken String? @map("refresh_token")
+  idToken      String? @map("id_token")
+  expiresAt    DateTime? @map("expires_at")
+  password     String?
 
-  @@unique([provider, providerAccountId])
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@index([providerId])
   @@map("accounts")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime? @default(now()) @map("created_at")
+  updatedAt  DateTime? @default(now()) @map("updated_at")
+
+  @@index([identifier])
+  @@index([expiresAt])
+  @@map("verifications")
 }
 
 model User {
@@ -54,105 +87,21 @@ model User {
   billingId      String? @map("billing_id")
   status         Int?    @default(1) @db.SmallInt
   type           String? @default("user")
+  emailVerified  Boolean @default(false) @map("email_verified")
 
   isTwoFactorEnabled Int?    @default(0) @map("is_two_factor_enabled")
   twoFactorSecret    String? @map("two_factor_secret") // secret key for two factor authentication
 
   accounts              Account[]
+  sessions              Session[]
   receiverNotifications Notification[] @relation("receiver")
   senderNotifications   Notification[] @relation("sender")
 
   userPaymentMethods  UserPaymentMethod[]
   userSettings        UserSetting[]
-  ucodes              Ucode[]
-  roles               Role[]
-  roleUsers           RoleUser[]
   paymentTransactions PaymentTransaction[]
 
   @@map("users")
-}
-
-model Ucode {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-  status    Int?     @default(1) @db.SmallInt
-
-  userId String? @map("user_id")
-  user   User?   @relation(fields: [userId], references: [id])
-
-  token     String?
-  email     String?
-  expiredAt DateTime? @map("expired_at")
-
-  @@map("ucodes")
-}
-
-model Role {
-  id        String    @id @default(cuid())
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  status Int?    @default(1) @db.SmallInt
-  title  String?
-  name   String?
-
-  userId String? @map("user_id")
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  permissionRoles PermissionRole[]
-  roleUsers       RoleUser[]
-  permissions     Permission[]     @relation("PermissionToRole")
-
-  @@map("roles")
-}
-
-model Permission {
-  id        String    @id @default(cuid())
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  status     Int?    @default(1) @db.SmallInt
-  title      String?
-  action     String?
-  subject    String?
-  conditions String?
-  fields     String?
-
-  permissionRoles PermissionRole[]
-  roles           Role[]           @relation("PermissionToRole")
-
-  @@map("permissions")
-}
-
-model PermissionRole {
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-
-  permissionId String     @map("permission_id")
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  roleId String @map("role_id")
-  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@id([permissionId, roleId])
-  @@map("permission_roles")
-}
-
-model RoleUser {
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-
-  roleId String @map("role_id")
-  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([roleId, userId])
-  @@map("role_users")
 }
 
 // this table stores notification event

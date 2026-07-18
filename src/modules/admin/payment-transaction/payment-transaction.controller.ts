@@ -1,15 +1,20 @@
 import { Controller, Get, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { PaymentTransactionService } from './payment-transaction.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
-import { JwtAuthGuard } from '../../../modules/auth/guards/jwt-auth.guard';
+import { AuthGuard } from '../../auth/guards/auth.guard';
 import { Role } from '../../../common/guard/role/role.enum';
 import { Roles } from '../../../common/guard/role/roles.decorator';
 import { Request } from 'express';
+import {
+  PaymentTransactionActionResponse,
+  PaymentTransactionDetailResponse,
+  PaymentTransactionListResponse,
+} from './dto/payment-transaction-response.dto';
 
 @ApiBearerAuth()
 @ApiTags('Payment transaction')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @Controller('admin/payment-transaction')
 export class PaymentTransactionController {
@@ -17,60 +22,39 @@ export class PaymentTransactionController {
     private readonly paymentTransactionService: PaymentTransactionService,
   ) {}
 
-  @ApiOperation({ summary: 'Get all packages' })
+  @ApiOperation({ summary: 'Get all payment transactions' })
+  @ApiResponse({
+    status: 200,
+    type: PaymentTransactionListResponse,
+    description: 'List of all transactions',
+  })
   @Get()
   async findAll(@Req() req: Request) {
-    try {
-      const user_id = req.user.userId;
-
-      const paymentTransactions =
-        await this.paymentTransactionService.findAll(user_id);
-
-      return paymentTransactions;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+    const user_id = req.user.id;
+    return this.paymentTransactionService.findAll(user_id);
   }
 
-  @ApiOperation({ summary: 'Get one package' })
+  @ApiOperation({ summary: 'Get details of a single transaction' })
+  @ApiResponse({
+    status: 200,
+    type: PaymentTransactionDetailResponse,
+    description: 'Transaction details',
+  })
   @Get(':id')
   async findOne(@Req() req: Request, @Param('id') id: string) {
-    try {
-      const user_id = req.user.userId;
-
-      const paymentTransaction = await this.paymentTransactionService.findOne(
-        id,
-        user_id,
-      );
-
-      return paymentTransaction;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+    const user_id = req.user.id;
+    return this.paymentTransactionService.findOne(id, user_id);
   }
 
+  @ApiOperation({ summary: 'Delete a payment transaction by id' })
+  @ApiResponse({
+    status: 200,
+    type: PaymentTransactionActionResponse,
+    description: 'Transaction deleted successfully',
+  })
   @Delete(':id')
   async remove(@Req() req: Request, @Param('id') id: string) {
-    try {
-      const user_id = req.user.userId;
-
-      const paymentTransaction = await this.paymentTransactionService.remove(
-        id,
-        user_id,
-      );
-
-      return paymentTransaction;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
-    }
+    const user_id = req.user.id;
+    return this.paymentTransactionService.remove(id, user_id);
   }
 }

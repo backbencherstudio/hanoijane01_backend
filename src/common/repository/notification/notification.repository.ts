@@ -1,26 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+
 @Injectable()
 export class NotificationRepository {
   constructor(private readonly prisma: PrismaService) {}
+
   /**
    * Create a notification
-   * @param sender_id - The ID of the user who fired the event
-   * @param receiver_id - The ID of the user to notify
+   * @param senderId - The ID of the user who fired the event
+   * @param receiverId - The ID of the user to notify
    * @param text - The text of the notification
    * @param type - The type of the notification
-   * @param entity_id - The ID of the entity related to the notification
+   * @param entityId - The ID of the entity related to the notification
    * @returns The created notification
    */
   async createNotification({
-    sender_id,
-    receiver_id,
+    senderId,
+    receiverId,
     text,
     type,
-    entity_id,
+    entityId,
   }: {
-    sender_id?: string;
-    receiver_id?: string;
+    senderId?: string;
+    receiverId?: string;
     text?: string;
     type?:
       | 'message'
@@ -30,7 +32,7 @@ export class NotificationRepository {
       | 'payment_transaction'
       | 'package'
       | 'blog';
-    entity_id?: string;
+    entityId?: string;
   }) {
     const notificationEventData = {};
     if (type) {
@@ -48,19 +50,19 @@ export class NotificationRepository {
     });
 
     const notificationData = {};
-    if (sender_id) {
-      notificationData['sender_id'] = sender_id;
+    if (senderId) {
+      notificationData['senderId'] = senderId;
     }
-    if (receiver_id) {
-      notificationData['receiver_id'] = receiver_id;
+    if (receiverId) {
+      notificationData['receiverId'] = receiverId;
     }
-    if (entity_id) {
-      notificationData['entity_id'] = entity_id;
+    if (entityId) {
+      notificationData['entityId'] = entityId;
     }
 
     const notification = await this.prisma.notification.create({
       data: {
-        notification_event_id: notificationEvent.id,
+        notificationEventId: notificationEvent.id,
         ...notificationData,
       },
     });

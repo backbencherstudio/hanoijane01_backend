@@ -4,9 +4,8 @@ import * as QRCode from 'qrcode';
 import appConfig from '../../../config/app.config';
 import { ArrayHelper } from '../../helper/array.helper';
 import { Role } from '../../guard/role/role.enum';
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-
 
 @Injectable()
 export class UserRepository {
@@ -44,21 +43,6 @@ export class UserRepository {
       where: {
         id: userId,
       },
-      include: {
-        role_users: {
-          include: {
-            role: {
-              include: {
-                permission_roles: {
-                  include: {
-                    permission: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     });
     return user;
   }
@@ -81,22 +65,17 @@ export class UserRepository {
    * @param param0
    * @returns
    */
-  async createSuAdminUser({ username, email, password }) {
-    try {
-      password = await bcrypt.hash(password, appConfig().security.salt);
+  async createSuAdminUser({ email, password }) {
+    password = await bcrypt.hash(password, appConfig().security.salt);
 
-      const user = await this.prisma.user.create({
-        data: {
-          username: username,
-          email: email,
-          password: password,
-          type: 'su_admin',
-        },
-      });
-      return user;
-    } catch (error) {
-      throw error;
-    }
+    const user = await this.prisma.user.create({
+      data: {
+        email: email,
+        password: password,
+        type: 'su_admin',
+      },
+    });
+    return user;
   }
 
   /**
@@ -104,31 +83,15 @@ export class UserRepository {
    * @param param0
    * @returns
    */
-  async inviteUser({
-    name,
-    username,
-    email,
-    role_id,
-  }: {
-    name: string;
-    username: string;
-    email: string;
-    role_id: string;
-  }) {
+  async inviteUser({ name, email }: { name: string; email: string }) {
     try {
       const user = await this.prisma.user.create({
         data: {
           name: name,
-          username: username,
           email: email,
         },
       });
       if (user) {
-        // attach role
-        await this.attachRole({
-          user_id: user.id,
-          role_id: role_id,
-        });
         return user;
       } else {
         return false;
@@ -139,154 +102,65 @@ export class UserRepository {
   }
 
   /**
-   * Attach a role to a user
-   * @param param0
-   * @returns
-   */
-  async attachRole({
-    user_id,
-    role_id,
-  }: {
-    user_id: string;
-    role_id: string;
-  }) {
-    const role = await this.prisma.roleUser.create({
-      data: {
-        user_id: user_id,
-        role_id: role_id,
-      },
-    });
-    return role;
-  }
-
-  /**
-   * update user role
-   * @param param0
-   * @returns
-   */
-  async syncRole({
-    user_id,
-    role_id,
-  }: {
-    user_id: string;
-    role_id: string;
-  }) {
-    const role = await this.prisma.roleUser.updateMany({
-      where: {
-        AND: [
-          {
-            user_id: user_id,
-          },
-        ],
-      },
-      data: {
-        role_id: role_id,
-      },
-    });
-    return role;
-  }
-
-  /**
    * create user under a tenant
    * @param param0
    * @returns
    */
   async createUser({
     name,
-    first_name,
-    last_name,
     email,
     password,
-    phone_number,
-    role_id = null,
+    phoneNumber,
     type = 'user',
   }: {
     name?: string;
-    first_name?: string;
-    last_name?: string;
     email: string;
     password: string;
-    phone_number?: string;
-    role_id?: string;
+    phoneNumber?: string;
     type?: string;
   }) {
-    try {
-      const data = {};
-      if (name) {
-        data['name'] = name;
-      }
-      if (first_name) {
-        data['first_name'] = first_name;
-      }
-      if (last_name) {
-        data['last_name'] = last_name;
-      }
-      if (phone_number) {
-        data['phone_number'] = phone_number;
-      }
-      if (email) {
-        // Check if email already exist
-        const userEmailExist = await this.exist({
-          field: 'email',
-          value: String(email),
-        });
-
-        if (userEmailExist) {
-          return {
-            success: false,
-            message: 'Email already exist',
-          };
-        }
-
-        data['email'] = email;
-      }
-      if (password) {
-        data['password'] = await bcrypt.hash(
-          password,
-          appConfig().security.salt,
-        );
-      }
-
-      if (type && ArrayHelper.inArray(type, Object.values(Role))) {
-        data['type'] = type;
-
-        // if (type == Role.VENDOR) {
-        //   data['approved_at'] = DateHelper.now();
-        // }
-      }
-
-      const user = await this.prisma.user.create({
-        data: {
-          ...data,
-        },
+    const data = {};
+    if (name) {
+      data['name'] = name;
+    }
+    if (phoneNumber) {
+      data['phoneNumber'] = phoneNumber;
+    }
+    if (email) {
+      // Check if email already exist
+      const userEmailExist = await this.exist({
+        field: 'email',
+        value: String(email),
       });
 
-      if (user) {
-        if (role_id) {
-          // attach role
-          await this.attachRole({
-            user_id: user.id,
-            role_id: role_id,
-          });
-        }
-
-        return {
-          success: true,
-          message: 'User created successfully',
-          data: user,
-        };
-      } else {
-        return {
-          success: false,
-          message: 'User creation failed',
-        };
+      if (userEmailExist) {
+        throw new BadRequestException('Email already exist');
       }
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+
+      data['email'] = email;
     }
+    if (password) {
+      data['password'] = await bcrypt.hash(
+        password,
+        appConfig().security.salt,
+      );
+    }
+
+    if (type && ArrayHelper.inArray(type, Object.values(Role))) {
+      data['type'] = type;
+    }
+
+    const user = await this.prisma.user.create({
+      data: {
+        ...data,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'User created successfully',
+      data: user,
+    };
   }
 
   /**
@@ -295,105 +169,72 @@ export class UserRepository {
    * @returns
    */
   async updateUser(
-    user_id: string,
+    userId: string,
     {
       name,
       email,
       password,
-      role_id = null,
       type = 'user',
     }: {
       name?: string;
       email?: string;
       password?: string;
-      role_id?: string;
       type?: string;
     },
   ) {
-    try {
-      const data = {};
-      if (name) {
-        data['name'] = name;
-      }
-      if (email) {
-        // Check if email already exist
-        const userEmailExist = await this.exist({
-          field: 'email',
-          value: String(email),
-        });
-
-        if (userEmailExist) {
-          return {
-            success: false,
-            message: 'Email already exist',
-          };
-        }
-        data['email'] = email;
-      }
-      if (password) {
-        data['password'] = await bcrypt.hash(
-          password,
-          appConfig().security.salt,
-        );
-      }
-
-      if (ArrayHelper.inArray(type, Object.values(Role))) {
-        data['type'] = type;
-      } else {
-        return {
-          success: false,
-          message: 'Invalid user type',
-        };
-      }
-
-      const existUser = await this.prisma.user.findFirst({
-        where: {
-          id: user_id,
-        },
-      });
-
-      if (!existUser) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-
-      const user = await this.prisma.user.update({
-        where: {
-          id: user_id,
-        },
-        data: {
-          ...data,
-        },
-      });
-
-      if (user) {
-        if (role_id) {
-          // attach role
-          await this.attachRole({
-            user_id: user.id,
-            role_id: role_id,
-          });
-        }
-
-        return {
-          success: true,
-          message: 'User updated successfully',
-          data: user,
-        };
-      } else {
-        return {
-          success: false,
-          message: 'User update failed',
-        };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+    const data = {};
+    if (name) {
+      data['name'] = name;
     }
+    if (email) {
+      // Check if email already exist
+      const userEmailExist = await this.exist({
+        field: 'email',
+        value: String(email),
+      });
+
+      if (userEmailExist && userEmailExist.id !== userId) {
+        throw new BadRequestException('Email already exist');
+      }
+      data['email'] = email;
+    }
+    if (password) {
+      data['password'] = await bcrypt.hash(
+        password,
+        appConfig().security.salt,
+      );
+    }
+
+    if (ArrayHelper.inArray(type, Object.values(Role))) {
+      data['type'] = type;
+    } else {
+      throw new BadRequestException('Invalid user type');
+    }
+
+    const existUser = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!existUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const user = await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        ...data,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'User updated successfully',
+      data: user,
+    };
   }
 
   /**
@@ -402,35 +243,25 @@ export class UserRepository {
    * @returns
    */
   async deleteUser(user_id: string) {
-    try {
-      // check if user exist
-      const existUser = await this.prisma.user.findFirst({
-        where: {
-          id: user_id,
-        },
-      });
-      if (!existUser) {
-        return {
-          success: false,
-          message: 'User not found',
-        };
-      }
-
-      await this.prisma.user.delete({
-        where: {
-          id: user_id,
-        },
-      });
-      return {
-        success: true,
-        message: 'User deleted successfully',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.message,
-      };
+    // check if user exist
+    const existUser = await this.prisma.user.findFirst({
+      where: {
+        id: user_id,
+      },
+    });
+    if (!existUser) {
+      throw new NotFoundException('User not found');
     }
+
+    await this.prisma.user.delete({
+      where: {
+        id: user_id,
+      },
+    });
+    return {
+      success: true,
+      message: 'User deleted successfully',
+    };
   }
 
   // change password
@@ -533,11 +364,10 @@ export class UserRepository {
       };
     }
   }
-
   // generate two factor secret
-  async generate2FASecret(user_id: string) {
+  async generate2FASecret(userId: string) {
     const user = await this.prisma.user.findFirst({
-      where: { id: user_id },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -549,8 +379,8 @@ export class UserRepository {
 
     const secret = speakeasy.generateSecret();
     await this.prisma.user.update({
-      where: { id: user_id },
-      data: { two_factor_secret: secret.base32 },
+      where: { id: userId },
+      data: { twoFactorSecret: secret.base32 },
     });
 
     const otpAuthUrl = secret.otpauth_url;
@@ -568,13 +398,13 @@ export class UserRepository {
   }
 
   // verify two factor
-  async verify2FA(user_id: string, token: string): Promise<boolean> {
-    const user = await this.prisma.user.findUnique({ where: { id: user_id } });
+  async verify2FA(userId: string, token: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
-    if (!user || !user.two_factor_secret) return false;
+    if (!user || !user.twoFactorSecret) return false;
 
     const isValid = speakeasy.totp.verify({
-      secret: user.two_factor_secret,
+      secret: user.twoFactorSecret,
       encoding: 'base32',
       token,
     });
@@ -583,19 +413,19 @@ export class UserRepository {
   }
 
   // enable two factor
-  async enable2FA(user_id: string) {
+  async enable2FA(userId: string) {
     const user = await this.prisma.user.update({
-      where: { id: user_id },
-      data: { is_two_factor_enabled: 1 },
+      where: { id: userId },
+      data: { isTwoFactorEnabled: 1 },
     });
     return user;
   }
 
   // disable two factor
-  async disable2FA(user_id: string) {
+  async disable2FA(userId: string) {
     const user = await this.prisma.user.update({
-      where: { id: user_id },
-      data: { is_two_factor_enabled: 0, two_factor_secret: null },
+      where: { id: userId },
+      data: { isTwoFactorEnabled: 0, twoFactorSecret: null },
     });
     return user;
   }

@@ -6,10 +6,14 @@ import appConfig from '../config/app.config';
 
 @Injectable()
 export class MailService {
+  static instance: MailService;
+
   constructor(
     @InjectQueue('mail-queue') private queue: Queue,
     private mailerService: MailerService,
-  ) {}
+  ) {
+    MailService.instance = this;
+  }
 
   async sendMemberInvitation({ user, member, url }) {
     try {
@@ -72,6 +76,42 @@ export class MailService {
         context: {
           name: params.name,
           verificationLink,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async sendVerificationEmail(email: string, name: string, url: string) {
+    try {
+      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
+      await this.queue.add('sendVerificationLink', {
+        to: email,
+        from,
+        subject: 'Verify Your Email',
+        template: './verification-link',
+        context: {
+          name,
+          verificationLink: url,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async sendResetPasswordEmail(email: string, name: string, url: string) {
+    try {
+      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
+      await this.queue.add('sendResetPassword', {
+        to: email,
+        from,
+        subject: 'Reset Your Password',
+        template: './reset-password',
+        context: {
+          name,
+          resetLink: url,
         },
       });
     } catch (error) {

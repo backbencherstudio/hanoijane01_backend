@@ -2,7 +2,9 @@ import { Controller, Post, Req, Headers } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { Request } from 'express';
 import { TransactionRepository } from '../../../common/repository/transaction/transaction.repository';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Payment')
 @Controller('payment/stripe')
 export class StripeController {
   constructor(
@@ -10,6 +12,7 @@ export class StripeController {
     private transactionRepository: TransactionRepository,
   ) {}
 
+  @ApiOperation({ summary: 'Stripe Webhook callback endpoint' })
   @Post('webhook')
   async handleWebhook(
     @Headers('stripe-signature') signature: string,
@@ -27,43 +30,40 @@ export class StripeController {
           break;
         case 'payment_intent.succeeded':
           const paymentIntent = event.data.object;
-          // create tax transaction
-          // await StripePayment.createTaxTransaction(
-          //   paymentIntent.metadata['tax_calculation'],
-          // );
           // Update transaction status in database
           await this.transactionRepository.updateTransaction({
-            reference_number: paymentIntent.id,
+            referenceNumber: paymentIntent.id,
             status: 'succeeded',
-            paid_amount: paymentIntent.amount / 100, // amount in dollars
-            paid_currency: paymentIntent.currency,
-            raw_status: paymentIntent.status,
+            paidAmount: paymentIntent.amount / 100, // amount in dollars
+            paidCurrency: paymentIntent.currency,
+            rawStatus: paymentIntent.status,
           });
           break;
         case 'payment_intent.payment_failed':
           const failedPaymentIntent = event.data.object;
           // Update transaction status in database
           await this.transactionRepository.updateTransaction({
-            reference_number: failedPaymentIntent.id,
+            referenceNumber: failedPaymentIntent.id,
             status: 'failed',
-            raw_status: failedPaymentIntent.status,
+            rawStatus: failedPaymentIntent.status,
           });
+          break;
         case 'payment_intent.canceled':
           const canceledPaymentIntent = event.data.object;
           // Update transaction status in database
           await this.transactionRepository.updateTransaction({
-            reference_number: canceledPaymentIntent.id,
+            referenceNumber: canceledPaymentIntent.id,
             status: 'canceled',
-            raw_status: canceledPaymentIntent.status,
+            rawStatus: canceledPaymentIntent.status,
           });
           break;
         case 'payment_intent.requires_action':
           const requireActionPaymentIntent = event.data.object;
           // Update transaction status in database
           await this.transactionRepository.updateTransaction({
-            reference_number: requireActionPaymentIntent.id,
+            referenceNumber: requireActionPaymentIntent.id,
             status: 'requires_action',
-            raw_status: requireActionPaymentIntent.status,
+            rawStatus: requireActionPaymentIntent.status,
           });
           break;
         case 'payout.paid':

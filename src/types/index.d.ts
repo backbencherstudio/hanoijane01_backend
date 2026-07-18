@@ -1,6 +1,7 @@
 declare namespace Express {
   export interface Request {
-    user?: { id: string; userId: string; email: string };
+    user?: import('prisma/generated/client').User;
+    session?: any;
     rawBody: any;
   }
 }
