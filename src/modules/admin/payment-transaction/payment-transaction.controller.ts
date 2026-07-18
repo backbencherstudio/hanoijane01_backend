@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { PaymentTransactionService } from './payment-transaction.service';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 import { Role } from '../../../common/guard/role/role.enum';
@@ -22,7 +22,10 @@ export class PaymentTransactionController {
     private readonly paymentTransactionService: PaymentTransactionService,
   ) {}
 
-  @ApiOperation({ summary: 'Get all payment transactions' })
+  @ApiOperation({
+    summary: 'Get all payment transactions',
+    description: 'Fetches a list of all payment transactions recorded in the database. Vendors are restricted to viewing only their own transactions, while admins can view all.',
+  })
   @ApiResponse({
     status: 200,
     type: PaymentTransactionListResponse,
@@ -34,7 +37,16 @@ export class PaymentTransactionController {
     return this.paymentTransactionService.findAll(user_id);
   }
 
-  @ApiOperation({ summary: 'Get details of a single transaction' })
+  @ApiOperation({
+    summary: 'Get details of a single transaction',
+    description: 'Fetches the full details of a specific payment transaction identified by its ID.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    required: true,
+    description: 'The unique ID of the payment transaction record to retrieve.',
+  })
   @ApiResponse({
     status: 200,
     type: PaymentTransactionDetailResponse,
@@ -46,7 +58,16 @@ export class PaymentTransactionController {
     return this.paymentTransactionService.findOne(id, user_id);
   }
 
-  @ApiOperation({ summary: 'Delete a payment transaction by id' })
+  @ApiOperation({
+    summary: 'Delete a payment transaction by id',
+    description: 'Permanently deletes the payment transaction record identified by its ID from the database.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    required: true,
+    description: 'The unique ID of the payment transaction record to delete.',
+  })
   @ApiResponse({
     status: 200,
     type: PaymentTransactionActionResponse,

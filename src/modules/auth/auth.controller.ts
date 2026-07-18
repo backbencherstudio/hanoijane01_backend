@@ -59,7 +59,10 @@ export class AuthController {
     cookies.forEach((cookie) => res.append('Set-Cookie', cookie));
   }
 
-  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiOperation({
+    summary: 'Login with email and password',
+    description: 'Authenticates a user using email and password, returning session details, set-cookie headers, and an auth token.',
+  })
   @ApiBody({ type: LoginAuthDto })
   @ApiResponse({
     status: 200,
@@ -83,7 +86,10 @@ export class AuthController {
     return { success: true, data: response };
   }
 
-  @ApiOperation({ summary: 'Register a new user' })
+  @ApiOperation({
+    summary: 'Register a new user',
+    description: 'Registers a new user record in the database and triggers an email verification code (OTP) to the registered email address.',
+  })
   @ApiBody({ type: CreateAuthDto })
   @ApiResponse({
     status: 200,
@@ -106,7 +112,10 @@ export class AuthController {
     return { success: true, data: result };
   }
 
-  @ApiOperation({ summary: 'Logout current session' })
+  @ApiOperation({
+    summary: 'Logout current session',
+    description: 'Clears the user session both on the database side and removes the local auth cookies by sending clear cookie headers.',
+  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
@@ -128,8 +137,7 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Forgot password',
-    description:
-      'Sends a 5-digit OTP to the registered email address for password reset.',
+    description: 'Sends a 5-digit verification OTP (One-Time Password) code to the registered email address to initiate the password reset sequence.',
   })
   @ApiBody({ type: ForgotPasswordAuthDto })
   @ApiResponse({
@@ -137,7 +145,7 @@ export class AuthController {
     type: ApiSuccessResponse,
     description: 'OTP sent successfully',
   })
-  @Post('forget_password')
+  @Post('forgot-password')
   async forgotPassword(
     @Body() body: ForgotPasswordAuthDto,
     @Req() req: Request,
@@ -151,7 +159,7 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Reset password',
-    description: 'Resets the password using the OTP received via email.',
+    description: 'Resets the user password by validating the email address and matching the 5-digit OTP sent to their email.',
   })
   @ApiBody({ type: ResetPasswordAuthDto })
   @ApiResponse({
@@ -159,7 +167,7 @@ export class AuthController {
     type: ApiSuccessResponse,
     description: 'Password reset successful',
   })
-  @Post('reset_password')
+  @Post('reset-password')
   async resetPassword(@Body() body: ResetPasswordAuthDto, @Req() req: Request) {
     const result = await auth.api.resetPasswordEmailOTP({
       body: { email: body.email, otp: body.otp, password: body.password },
@@ -170,8 +178,7 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Verify email with OTP',
-    description:
-      "Verifies the user's email address using the 5-digit OTP sent at signup.",
+    description: "Verifies the user's email address by passing the 5-digit signup OTP sent to their inbox, activating their session directly.",
   })
   @ApiBody({ type: VerifyEmailAuthDto })
   @ApiResponse({
@@ -179,7 +186,7 @@ export class AuthController {
     type: LoginSuccessResponse,
     description: 'Email verified — returns session token',
   })
-  @Post('verify_email')
+  @Post('verify-email')
   async verifyEmail(
     @Body() body: VerifyEmailAuthDto,
     @Req() req: Request,
@@ -196,8 +203,7 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Resend verification email OTP',
-    description:
-      'Resends a 5-digit verification OTP to the registered email address.',
+    description: 'Resends a fresh 5-digit verification OTP (One-Time Password) to the user email for account verification.',
   })
   @ApiBody({ type: ResendVerificationAuthDto })
   @ApiResponse({
@@ -205,7 +211,7 @@ export class AuthController {
     type: ApiSuccessResponse,
     description: 'Verification OTP resent successfully',
   })
-  @Post('resend_verification_email')
+  @Post('resend-verification-email')
   async resendVerificationEmail(
     @Body() body: ResendVerificationAuthDto,
     @Req() req: Request,
@@ -220,7 +226,10 @@ export class AuthController {
     return { success: true, message: 'Verification OTP resent successfully' };
   }
 
-  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiOperation({
+    summary: 'Get current user profile',
+    description: 'Fetches the profile details of the currently authenticated user based on their session token.',
+  })
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
@@ -233,7 +242,10 @@ export class AuthController {
     return this.authService.me(session.user.id);
   }
 
-  @ApiOperation({ summary: 'Update user profile' })
+  @ApiOperation({
+    summary: 'Update user profile',
+    description: 'Updates the profile fields (name, phone, company info) and supports uploading a new avatar image using Multipart form-data.',
+  })
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
