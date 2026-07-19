@@ -12,6 +12,7 @@ const Stripe = new stripe(STRIPE_SECRET_KEY, {
 });
 
 const STRIPE_WEBHOOK_SECRET = appConfig().payment.stripe.webhook_secret;
+
 /**
  * Stripe payment method helper
  */
@@ -37,8 +38,6 @@ export class StripePayment {
 
   /**
    * Add customer to stripe
-   * @param email
-   * @returns
    */
   static async createCustomer({
     user_id,
@@ -104,21 +103,35 @@ export class StripePayment {
     return customer;
   }
 
-  /**
-   * Get customer using id
-   * @param id
-   * @returns
-   */
   static async getCustomerByID(id: string): Promise<stripe.Customer> {
     const customer = await Stripe.customers.retrieve(id);
     return customer as stripe.Customer;
   }
 
-  /**
-   * Create billing portal session
-   * @param customer
-   * @returns
-   */
+  static async getCharge(chargeId: string): Promise<stripe.Charge> {
+    return Stripe.charges.retrieve(chargeId);
+  }
+
+  static async getPaymentIntent(paymentIntentId: string): Promise<stripe.PaymentIntent> {
+    return Stripe.paymentIntents.retrieve(paymentIntentId);
+  }
+
+  static async getCheckoutSession(sessionId: string): Promise<stripe.Checkout.Session> {
+    return Stripe.checkout.sessions.retrieve(sessionId);
+  }
+
+  static async refundPaymentIntent(
+    paymentIntentId: string,
+    reason?: string,
+  ): Promise<stripe.Refund> {
+    return Stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      metadata: {
+        reason: reason || 'stall_already_booked_conflict',
+      },
+    });
+  }
+
   static async createBillingSession(customer: string) {
     const session = await Stripe.billingPortal.sessions.create({
       customer: customer,
@@ -135,92 +148,71 @@ export class StripePayment {
   }: {
     amount: number;
     currency: string;
-    customer_id: string;
+    customer_id?: string;
     metadata?: stripe.MetadataParam;
   }): Promise<stripe.PaymentIntent> {
     return Stripe.paymentIntents.create({
-      amount: amount * 100, // amount in cents
+      amount: Math.round(amount * 100), // amount in cents
       currency: currency,
-      customer: customer_id,
+      ...(customer_id ? { customer: customer_id } : {}),
       metadata: metadata,
     });
   }
 
   /**
-   * Create stripe hosted checkout session
-   * @param customer
-   * @param price
-   * @returns
+   * Create stripe hosted checkout session for stall booking
    */
-  static async createCheckoutSession() {
-    const success_url = `${
-      appConfig().app.url
-    }/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancel_url = `${appConfig().app.url}/failed`;
+  static async createBookingCheckoutSession({
+    bookingId,
+    userId,
+    title,
+    amount,
+    currency = 'usd',
+    customerEmail,
+    successUrl,
+    cancelUrl,
+  }: {
+    bookingId: string;
+    userId?: string;
+    title: string;
+    amount: number;
+    currency?: string;
+    customerEmail?: string;
+    successUrl?: string;
+    cancelUrl?: string;
+  }): Promise<stripe.Checkout.Session> {
+    const success_url =
+      successUrl ||
+      `${appConfig().app.url}/booking/payment/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancel_url =
+      cancelUrl || `${appConfig().app.url}/booking/payment/cancel`;
 
     const session = await Stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
+      customer_email: customerEmail,
+      metadata: {
+        bookingId,
+        userId: userId || '',
+      },
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: currency.toLowerCase(),
             product_data: {
-              name: 'Sample Product',
+              name: title,
             },
-            unit_amount: 2000, // $20.00
+            unit_amount: Math.round(amount * 100),
           },
           quantity: 1,
         },
       ],
-
-      success_url: success_url,
-      cancel_url: cancel_url,
-      // automatic_tax: { enabled: true },
+      success_url,
+      cancel_url,
     });
     return session;
   }
 
-  /**
-   * Create stripe hosted checkout session
-   * @param customer
-   * @param price
-   * @returns
-   */
-  static async createCheckoutSessionSubscription(
-    customer: string,
-    price: string,
-  ) {
-    const success_url = `${
-      appConfig().app.url
-    }/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancel_url = `${appConfig().app.url}/failed`;
-
-    const session = await Stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      customer: customer,
-      line_items: [
-        {
-          price: price,
-          quantity: 1,
-        },
-      ],
-      subscription_data: {
-        trial_period_days: 14,
-      },
-      success_url: success_url,
-      cancel_url: cancel_url,
-      // automatic_tax: { enabled: true },
-    });
-    return session;
-  }
-
-  /**
-   * Calculate taxes
-   * @param amount
-   * @returns
-   */
   static async calculateTax({
     amount,
     currency,
@@ -235,7 +227,7 @@ export class StripePayment {
       customer_details: customer_details,
       line_items: [
         {
-          amount: amount * 100,
+          amount: Math.round(amount * 100),
           tax_behavior: 'exclusive',
           reference: 'tax_calculation',
         },
@@ -244,7 +236,6 @@ export class StripePayment {
     return taxCalculation;
   }
 
-  // create a tax transaction
   static async createTaxTransaction(
     tax_calculation: string,
   ): Promise<stripe.Tax.Transaction> {
@@ -255,204 +246,32 @@ export class StripePayment {
     return taxTransaction;
   }
 
-  // download invoice using payment intent id
   static async downloadInvoiceUrl(
     payment_intent_id: string,
   ): Promise<string | null> {
     const invoice = await Stripe.invoices.retrieve(payment_intent_id);
-    // check if the invoice has  areceipt url
     if (invoice.hosted_invoice_url) {
       return invoice.hosted_invoice_url;
     }
     return null;
   }
 
-  // download invoice using payment intent id
   static async downloadInvoiceFile(payment_intent_id: string) {
     const invoice = await Stripe.invoices.retrieve(payment_intent_id);
-
     if (invoice.hosted_invoice_url) {
       const response = await Fetch.get(invoice.hosted_invoice_url, {
         responseType: 'stream',
       });
-
-      // save the response to a file
       return fs.writeFileSync('receipt.pdf', response.data);
     } else {
       return null;
     }
   }
 
-  // send invoice to email using payment intent id
   static async sendInvoiceToEmail(payment_intent_id: string) {
     const invoice = await Stripe.invoices.sendInvoice(payment_intent_id);
     return invoice;
   }
-
-  // -----------------------payout system start--------------------------------
-
-  // If you are paying users, they need Stripe Connect accounts. You can create Express or Standard accounts.
-  static async createConnectedAccount(email: string) {
-    const connectedAccount = await Stripe.accounts.create({
-      type: 'express',
-      email: email,
-      country: 'US', // change as per user's country
-      // business_profile: {
-      //   url: appConfig().app.url,
-      // },
-      // settings: {
-      //   payouts: {
-      //     schedule: {
-      //       interval: 'manual',
-      //     },
-      //   },
-      // },
-      capabilities: {
-        // card_payments: {
-        //   enabled: true,
-        // },
-        transfers: {
-          // enabled: true,
-          requested: true,
-        },
-      },
-    });
-
-    return connectedAccount;
-  }
-
-  // Before making payouts, users must complete Stripe Connect onboarding.
-  static async createOnboardingAccountLink(account_id: string) {
-    const accountLink = await Stripe.accountLinks.create({
-      account: account_id,
-      refresh_url: appConfig().app.url,
-      return_url: appConfig().app.url,
-      type: 'account_onboarding',
-    });
-
-    return accountLink;
-  }
-
-  // transfer money to account
-  static async createTransfer(
-    account_id: string,
-    amount: number,
-    currency: string,
-  ) {
-    const transfer = await Stripe.transfers.create({
-      amount: amount * 100,
-      currency: currency,
-      destination: account_id,
-    });
-    return transfer;
-  }
-
-  // Once the user has an approved Stripe account with a linked bank, you can send them funds.
-  static async createPayout(
-    account_id: string,
-    amount: number,
-    currency: string,
-  ) {
-    const payout = await Stripe.payouts.create(
-      {
-        amount: amount * 100, // amount in cents
-        currency: currency,
-      },
-      {
-        stripeAccount: account_id, // context of connected account
-      },
-    );
-
-    return payout;
-  }
-
-  // check balance of account
-  static async checkBalance(account_id: string) {
-    const balance = await Stripe.balance.retrieve({
-      stripeAccount: account_id,
-    });
-    return balance;
-  }
-
-  // static async createPayout(amount: number, currency: string) {
-  //   const payout = await Stripe.payouts.create({
-  //     amount: amount * 100,
-  //     currency: currency,
-  //   });
-  //   return payout;
-  // }
-  // -----------------------payout system end--------------------------------
-
-  // ACH payment
-  static async createToken() {
-    const token = await Stripe.tokens.create({
-      bank_account: {
-        country: 'US',
-        currency: 'usd',
-        routing_number: '110000000',
-        account_number: '000123456789',
-        account_holder_name: 'Jane Doe',
-        account_holder_type: 'individual',
-      },
-    });
-    return token;
-  }
-
-  static async createBankAccount(customerId: string, bankAccountToken: string) {
-    const bankAccount = await Stripe.customers.createSource(customerId, {
-      source: bankAccountToken,
-    });
-    return bankAccount;
-  }
-
-  static async verifyBankAccount(
-    customerId: string,
-    bankAccountId: string,
-    amounts: [number, number],
-  ) {
-    return Stripe.customers.verifySource(customerId, bankAccountId, {
-      amounts,
-    });
-  }
-
-  static async createACHPaymentIntent(customerId: string, amount: number) {
-    return await Stripe.paymentIntents.create({
-      amount: amount * 100,
-      currency: 'usd',
-      customer: customerId,
-      payment_method_types: ['us_bank_account'],
-      payment_method_options: {
-        us_bank_account: {
-          verification_method: 'automatic',
-        },
-      },
-    });
-    // return await Stripe.checkout.sessions.create({
-    //   mode: 'payment',
-    //   customer: customerId,
-    //   payment_method_types: ['card', 'us_bank_account'],
-    //   payment_method_options: {
-    //     us_bank_account: {
-    //       verification_method: 'automatic',
-    //     },
-    //   },
-    //   line_items: [
-    //     {
-    //       price_data: {
-    //         currency: 'usd',
-    //         unit_amount: amount * 100,
-    //         product_data: {
-    //           name: 'T-shirt',
-    //         },
-    //       },
-    //       quantity: 1,
-    //     },
-    //   ],
-    //   success_url: 'https://example.com/success',
-    //   cancel_url: 'https://example.com/cancel',
-    // });
-  }
-  // end ACH
 
   static handleWebhook(rawBody: string, sig: string | string[]): stripe.Event {
     const event = Stripe.webhooks.constructEvent(
