@@ -336,7 +336,7 @@ model Contact {
   name        String?
   companyName String?
   email       String
-  phoneNumber String
+  phoneNumber String?
   message     String
 
   userId String?
