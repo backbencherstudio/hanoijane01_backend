@@ -84,6 +84,7 @@ model User {
   avatar         String?
   phoneNumber    String? @map("phone_number")
   companyAddress String? @map("company_address")
+  companyBio     String? @map("company_bio") @db.Text
   websiteLink    String? @map("website_link")
   billingId      String? @map("billing_id")
   status         Int?    @default(1) @db.SmallInt
@@ -278,6 +279,7 @@ model Booking {
   subTotalAmount Decimal @default(0.00) @map("sub_total_amount") @db.Decimal(12, 2)
   discountAmount Decimal @default(0.00) @map("discount_amount") @db.Decimal(12, 2)
   vatAmount      Decimal @default(0.00) @map("vat_amount") @db.Decimal(12, 2)
+  vatPercentage  Decimal @default(0.00) @map("vat_percentage") @db.Decimal(5, 2)
   totalAmount    Decimal @default(0.00) @map("total_amount") @db.Decimal(12, 2)
 
   paymentStatus           String?   @default("unpaid") @map("payment_status") // unpaid, paid, failed, refunded

@@ -19,11 +19,9 @@ export class ExhibitionService {
         bookingEndedAt: true,
         halls: {
           select: {
-            id: true,
             title: true,
             standCategories: {
               select: {
-                id: true,
                 title: true,
                 slug: true,
                 size: true,
@@ -141,11 +139,9 @@ export class ExhibitionService {
             vatPercentage: true,
             hall: {
               select: {
-                id: true,
                 title: true,
                 exhibition: {
                   select: {
-                    id: true,
                     title: true,
                     slug: true,
                     location: true,
