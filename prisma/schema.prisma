@@ -101,11 +101,11 @@ model User {
   userSettings        UserSetting[]
   paymentTransactions PaymentTransaction[]
   bookings            Booking[]
+  contacts            Contact[]
 
   @@map("users")
 }
 
-// this table stores notification event
 model NotificationEvent {
   id        String    @id @default(cuid())
   createdAt DateTime  @default(now()) @map("created_at")
@@ -180,20 +180,41 @@ model UserSetting {
 }
 
 model Exhibition {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  startedAt       DateTime? @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  bookingStatedAt DateTime? @map("booking_stated_at")
+  bookingEndedAt  DateTime? @map("booking_ended_at")
+
+  title       String?
+  description String?
+  slug        String?
+
+  location String?
+
+  stands Stand[]
+  halls  Hall[]
+
+  @@map("exhibitions")
+}
+
+model Hall {
   id        String    @id @default(cuid())
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
-  startedAt DateTime? @map("started_at")
-  endedAt   DateTime? @map("ended_at")
 
-  title           String?
-  description     String?
-  slug            String?
-  stands          Stand[]
+  title String? @map("title")
+
+  exhibitionId String?     @map("exhibition_id")
+  exhibition   Exhibition? @relation(fields: [exhibitionId], references: [id])
+
   standCategories StandCategory[]
 
-  @@map("exhibitions")
+  @@map("halls")
 }
 
 model StandCategory {
@@ -210,9 +231,9 @@ model StandCategory {
   price            Decimal @default(0.00) @db.Decimal(12, 2)
   vatPercentage    Decimal @default(0.00) @map("vat_percentage") @db.Decimal(5, 2)
 
-  exhibitionId String?     @map("exhibition_id")
-  exhibition   Exhibition? @relation(fields: [exhibitionId], references: [id])
-  stands       Stand[]
+  hallId String? @map("hall_id")
+  hall   Hall?   @relation(fields: [hallId], references: [id])
+  stands Stand[]
 
   @@map("stand_categories")
 }
@@ -306,4 +327,18 @@ model PaymentTransaction {
   booking   Booking? @relation(fields: [bookingId], references: [id])
 
   @@map("payment_transactions")
+}
+
+model Contact {
+  id          String  @id @default(cuid())
+  name        String?
+  companyName String?
+  email       String
+  phoneNumber String
+  message     String
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@map("contacts")
 }
