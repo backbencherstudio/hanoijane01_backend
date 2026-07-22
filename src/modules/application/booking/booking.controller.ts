@@ -21,7 +21,7 @@ import {
   AppBookingListResponseDto,
 } from './dto/response-booking.dto';
 
-@ApiTags('Booking')
+@ApiTags('Application / Booking')
 @ApiBearerAuth()
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.USER)

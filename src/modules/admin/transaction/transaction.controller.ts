@@ -7,7 +7,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { PaymentTransactionService } from './payment-transaction.service';
+import { TransactionService } from './transaction.service';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -25,16 +25,16 @@ import {
   PaymentTransactionActionResponse,
   PaymentTransactionDetailResponse,
   PaymentTransactionListResponse,
-} from './dto/response-payment-transaction.dto';
+} from './dto/response-transaction.dto';
 
 @ApiBearerAuth()
-@ApiTags('Payment transaction')
+@ApiTags('Admin / Transaction')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
-@Controller('admin/payment-transaction')
-export class PaymentTransactionController {
+@Controller('admin/transaction')
+export class TransactionController {
   constructor(
-    private readonly paymentTransactionService: PaymentTransactionService,
+    private readonly transactionService: TransactionService,
     private readonly stripeService: StripeService,
   ) {}
 
@@ -51,7 +51,7 @@ export class PaymentTransactionController {
   @Get()
   async findAll(@Req() req: Request) {
     const user_id = req.user.id;
-    return this.paymentTransactionService.findAll(user_id);
+    return this.transactionService.findAll(user_id);
   }
 
   @ApiOperation({
@@ -109,7 +109,8 @@ export class PaymentTransactionController {
     name: 'id',
     type: String,
     required: true,
-    description: 'The unique ID of the payment transaction record to retrieve.',
+    description:
+      'The unique ID of the payment transaction record to retrieve.',
   })
   @ApiResponse({
     status: 200,
@@ -119,7 +120,7 @@ export class PaymentTransactionController {
   @Get(':id')
   async findOne(@Req() req: Request, @Param('id') id: string) {
     const user_id = req.user.id;
-    return this.paymentTransactionService.findOne(id, user_id);
+    return this.transactionService.findOne(id, user_id);
   }
 
   @ApiOperation({
@@ -131,7 +132,8 @@ export class PaymentTransactionController {
     name: 'id',
     type: String,
     required: true,
-    description: 'The unique ID of the payment transaction record to delete.',
+    description:
+      'The unique ID of the payment transaction record to delete.',
   })
   @ApiResponse({
     status: 200,
@@ -141,6 +143,6 @@ export class PaymentTransactionController {
   @Delete(':id')
   async remove(@Req() req: Request, @Param('id') id: string) {
     const user_id = req.user.id;
-    return this.paymentTransactionService.remove(id, user_id);
+    return this.transactionService.remove(id, user_id);
   }
 }

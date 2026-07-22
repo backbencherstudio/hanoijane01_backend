@@ -11,7 +11,7 @@ import { OptionalAuthGuard } from '../../auth/guards/optional-auth.guard';
 import { Session, UserSession } from '../../auth/decorators/session.decorator';
 import { ResponseContactDto } from './dto/response-contact.dto';
 
-@ApiTags('Contact')
+@ApiTags('Application / Contact')
 @Controller('contact')
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}

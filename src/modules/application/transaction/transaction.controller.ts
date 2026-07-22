@@ -17,7 +17,7 @@ import { RolesGuard } from 'src/common/guard/role/roles.guard';
 import { AuthGuard } from 'src/modules/auth/guards/auth.guard';
 import { ResponseTransactionListDto } from './dto/response-transaction.dto';
 
-@ApiTags('Transaction')
+@ApiTags('Application / Transaction')
 @ApiBearerAuth()
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.USER)

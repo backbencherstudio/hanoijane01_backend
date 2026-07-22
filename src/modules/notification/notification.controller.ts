@@ -18,7 +18,7 @@ import {
 } from './dto/response-notification.dto';
 
 @ApiBearerAuth()
-@ApiTags('Notification')
+@ApiTags('Admin / Notification')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @Controller('admin/notification')

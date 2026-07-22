@@ -17,7 +17,7 @@ import {
 import { QueryOverviewDto } from './dto/query-overview.dto';
 
 @ApiBearerAuth()
-@ApiTags('Admin Overview')
+@ApiTags('Admin / Overview')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @Controller('admin/overview')

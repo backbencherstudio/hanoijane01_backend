@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UserRepository } from '../../../common/repository/user/user.repository';
 
 @Injectable()
-export class PaymentTransactionService {
+export class TransactionService {
   constructor(
     private prisma: PrismaService,
     private userRepository: UserRepository,
@@ -12,15 +13,13 @@ export class PaymentTransactionService {
   async findAll(user_id?: string) {
     const userDetails = await this.userRepository.getUserDetails(user_id);
 
-    const whereClause = {};
-    if (userDetails.type == 'vendor') {
-      whereClause['userId'] = user_id;
+    const whereClause: Prisma.PaymentTransactionWhereInput = {};
+    if (userDetails?.type === 'vendor') {
+      whereClause.userId = user_id;
     }
 
     const paymentTransactions = await this.prisma.paymentTransaction.findMany({
-      where: {
-        ...whereClause,
-      },
+      where: whereClause,
       select: {
         id: true,
         referenceNumber: true,
@@ -33,6 +32,7 @@ export class PaymentTransactionService {
         createdAt: true,
         updatedAt: true,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     return {
@@ -44,16 +44,15 @@ export class PaymentTransactionService {
   async findOne(id: string, user_id?: string) {
     const userDetails = await this.userRepository.getUserDetails(user_id);
 
-    const whereClause = {};
-    if (userDetails.type == 'vendor') {
-      whereClause['userId'] = user_id;
+    const whereClause: Prisma.PaymentTransactionWhereInput = {
+      id: id,
+    };
+    if (userDetails?.type === 'vendor') {
+      whereClause.userId = user_id;
     }
 
-    const paymentTransaction = await this.prisma.paymentTransaction.findUnique({
-      where: {
-        id: id,
-        ...whereClause,
-      },
+    const paymentTransaction = await this.prisma.paymentTransaction.findFirst({
+      where: whereClause,
       select: {
         id: true,
         referenceNumber: true,
@@ -81,16 +80,15 @@ export class PaymentTransactionService {
   async remove(id: string, user_id?: string) {
     const userDetails = await this.userRepository.getUserDetails(user_id);
 
-    const whereClause = {};
-    if (userDetails.type == 'vendor') {
-      whereClause['userId'] = user_id;
+    const whereClause: Prisma.PaymentTransactionWhereInput = {
+      id: id,
+    };
+    if (userDetails?.type === 'vendor') {
+      whereClause.userId = user_id;
     }
 
-    const paymentTransaction = await this.prisma.paymentTransaction.findUnique({
-      where: {
-        id: id,
-        ...whereClause,
-      },
+    const paymentTransaction = await this.prisma.paymentTransaction.findFirst({
+      where: whereClause,
     });
 
     if (!paymentTransaction) {

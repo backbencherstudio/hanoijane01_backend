@@ -13,7 +13,7 @@ import {
   ResponseStandDetailDto,
 } from './dto/response-exhibition.dto';
 
-@ApiTags('Exhibition')
+@ApiTags('Application / Exhibition')
 @Controller('exhibition')
 export class ExhibitionController {
   constructor(private readonly exhibitionService: ExhibitionService) {}

@@ -32,7 +32,7 @@ import {
 } from './dto/response-user.dto';
 
 @ApiBearerAuth()
-@ApiTags('User')
+@ApiTags('Admin / User')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @Controller('admin/user')
