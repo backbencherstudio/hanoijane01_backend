@@ -81,7 +81,6 @@ export class BookingService {
             id: true,
             standNumber: true,
             title: true,
-            slug: true,
             category: {
               select: {
                 title: true,

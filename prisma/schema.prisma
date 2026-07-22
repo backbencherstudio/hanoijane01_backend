@@ -246,9 +246,8 @@ model Stand {
   deletedAt DateTime? @map("deleted_at")
 
   title       String?
-  standNumber Int?    @map("stand_number")
+  standNumber String? @unique @map("stand_number")
   description String?
-  slug        String  @unique
 
   isAvailable Int @default(1) @map("is_available") @db.SmallInt // 1 = available, 0 = not available
 

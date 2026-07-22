@@ -48,7 +48,6 @@ export class ExhibitionService {
             id: true,
             title: true,
             standNumber: true,
-            slug: true,
             isAvailable: true,
             category: {
               select: {
@@ -127,7 +126,6 @@ export class ExhibitionService {
         id: true,
         standNumber: true,
         title: true,
-        slug: true,
         isAvailable: true,
         category: {
           select: {

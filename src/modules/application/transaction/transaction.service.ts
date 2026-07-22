@@ -30,7 +30,6 @@ export class TransactionService {
                   id: true,
                   title: true,
                   standNumber: true,
-                  slug: true,
                 },
               },
             },
@@ -62,7 +61,7 @@ export class TransactionService {
         standId: t.booking?.stand?.id,
         standTitle: t.booking?.stand?.title,
         standNumber: t.booking?.stand?.standNumber,
-        standSlug: t.booking?.stand?.slug,
+        standSlug: null,
       })),
     };
   }

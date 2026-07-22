@@ -73,7 +73,7 @@ export class StripeService {
 
     const customerEmail = dto.customerEmail || booking.email || undefined;
     const title = stand
-      ? `Stand Reservation: ${stand.title || stand.slug}`
+      ? `Stand Reservation: ${stand.title || stand.standNumber}`
       : `Booking #${booking.id}`;
 
     // Create Stripe Checkout Session

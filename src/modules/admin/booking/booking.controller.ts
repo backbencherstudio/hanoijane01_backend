@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -16,17 +17,19 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { BookingService } from './booking.service';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { Roles } from '../../../common/guard/role/roles.decorator';
 import { Role } from '../../../common/guard/role/role.enum';
 import {
-  AdminBookingActionResponseDto,
   AdminBookingDetailResponseDto,
-  AdminBookingListResponseDto,
+  AdminBookingListPaginatedResponseDto,
+  AdminBookingStatsResponseDto,
 } from './dto/response-booking.dto';
+import {
+  GetBookingStatsQueryDto,
+  GetBookingsQueryDto,
+} from './dto/query-booking.dto';
 
 @ApiTags('Admin / Booking')
 @ApiBearerAuth()
@@ -37,33 +40,33 @@ export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
   @ApiOperation({
-    summary: 'Create a booking (Admin)',
+    summary: 'Get booking stats (Admin)',
     description:
-      'Manually creates a stand booking record from the admin dashboard.',
-  })
-  @ApiResponse({
-    status: 201,
-    type: AdminBookingActionResponseDto,
-    description: 'Booking created successfully',
-  })
-  @Post()
-  create(@Body() createBookingDto: CreateBookingDto) {
-    return this.bookingService.create(createBookingDto);
-  }
-
-  @ApiOperation({
-    summary: 'Get all bookings (Admin)',
-    description:
-      'Retrieves a list of all user stand bookings across exhibitions.',
+      'Retrieves summary statistics of available stands, booked stands, and canceled bookings.',
   })
   @ApiResponse({
     status: 200,
-    type: AdminBookingListResponseDto,
+    type: AdminBookingStatsResponseDto,
+    description: 'Stats retrieved successfully',
+  })
+  @Get('stats')
+  getStats(@Query() query: GetBookingStatsQueryDto) {
+    return this.bookingService.getStats(query);
+  }
+
+  @ApiOperation({
+    summary: 'Get all bookings with filters and pagination (Admin)',
+    description:
+      'Retrieves a paginated list of bookings filtering by search and booking status.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminBookingListPaginatedResponseDto,
     description: 'List of bookings retrieved successfully',
   })
   @Get()
-  findAll() {
-    return this.bookingService.findAll();
+  findAll(@Query() query: GetBookingsQueryDto) {
+    return this.bookingService.findAll(query);
   }
 
   @ApiOperation({
@@ -85,45 +88,5 @@ export class BookingController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.bookingService.findOne(id);
-  }
-
-  @ApiOperation({
-    summary: 'Update a booking by ID (Admin)',
-    description: 'Updates details or status of an existing stand booking.',
-  })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    required: true,
-    description: 'The unique ID of the booking record to update',
-  })
-  @ApiResponse({
-    status: 200,
-    type: AdminBookingActionResponseDto,
-    description: 'Booking updated successfully',
-  })
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBookingDto: UpdateBookingDto) {
-    return this.bookingService.update(id, updateBookingDto);
-  }
-
-  @ApiOperation({
-    summary: 'Delete a booking by ID (Admin)',
-    description: 'Permanently removes a booking record from the database.',
-  })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    required: true,
-    description: 'The unique ID of the booking record to delete',
-  })
-  @ApiResponse({
-    status: 200,
-    type: AdminBookingActionResponseDto,
-    description: 'Booking deleted successfully',
-  })
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.bookingService.remove(id);
   }
 }
