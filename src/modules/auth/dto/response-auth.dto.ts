@@ -25,6 +25,22 @@ export class AuthUserDto {
   @ApiProperty({ example: false })
   emailVerified: boolean;
 
+  @ApiProperty({ example: 'Acme Corp', nullable: true, required: false })
+  companyName?: string | null;
+
+  @ApiProperty({ example: '+8801711223344', nullable: true, required: false })
+  phoneNumber?: string | null;
+
+  @ApiProperty({ example: '123 Main St', nullable: true, required: false })
+  companyAddress?: string | null;
+
+  @ApiProperty({
+    example: 'https://example.com/avatar.jpg',
+    nullable: true,
+    required: false,
+  })
+  avatar?: string | null;
+
   @ApiProperty({ example: 'user', description: 'user | admin' })
   type: string;
 
@@ -54,6 +70,14 @@ export class LoginSuccessResponse {
 export class SignupResponseData {
   @ApiProperty({ type: AuthUserDto })
   user: AuthUserDto;
+
+  @ApiProperty({
+    example: null,
+    nullable: true,
+    required: false,
+    description: 'Session token if auto sign-in is enabled',
+  })
+  token?: string | null;
 }
 
 export class SignupSuccessResponse {
