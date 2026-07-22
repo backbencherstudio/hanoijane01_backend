@@ -9,7 +9,7 @@ import {
   IsIn,
 } from 'class-validator';
 
-export class CreateUserDto {
+export class CreateUserAdminDto {
   @IsNotEmpty()
   @IsString()
   @ApiProperty({

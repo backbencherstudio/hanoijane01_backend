@@ -6,13 +6,11 @@ import appConfig from '../../config/app.config';
 import { MailService } from '../../mail/mail.service';
 import { emailOTP, bearer } from 'better-auth/plugins';
 
-// Create a standalone Prisma client for Better Auth
-// (separate from the NestJS PrismaService since Better Auth needs it at module init time)
 const connectionString = appConfig().database.url;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
-export const auth: any = betterAuth({
+export const auth = betterAuth({
   baseURL: appConfig().app.url,
   basePath: '/api/auth',
   secret: process.env.BETTER_AUTH_SECRET || 'better-auth-secret-1234567890',
@@ -20,8 +18,6 @@ export const auth: any = betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
-
-  // Map Better Auth's camelCase field names to our camelCase Prisma schema properties
   user: {
     modelName: 'User',
     changeEmail: {
@@ -103,3 +99,4 @@ export const auth: any = betterAuth({
 });
 
 export type BetterAuthSession = typeof auth.$Infer.Session;
+

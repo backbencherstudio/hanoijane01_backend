@@ -3,8 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserAdminDto } from './dto/create-user.dto';
+import { UpdateUserAdminDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -43,7 +43,7 @@ export class UserService {
     };
   }
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserAdminDto) {
     const existingUser = await this.prisma.user.findFirst({
       where: { email: createUserDto.email },
     });
@@ -270,7 +270,7 @@ export class UserService {
     };
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserAdminDto) {
     const user = await this.userRepository.updateUser(id, updateUserDto);
     return {
       success: user.success,

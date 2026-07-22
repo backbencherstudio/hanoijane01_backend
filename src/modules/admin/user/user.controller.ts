@@ -10,8 +10,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserAdminDto } from './dto/create-user.dto';
+import { UpdateUserAdminDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import {
   ApiBearerAuth,
@@ -65,7 +65,7 @@ export class UserController {
     description: 'User created successfully',
   })
   @Post()
-  async create(@Body() createUserDto: CreateUserDto) {
+  async create(@Body() createUserDto: CreateUserAdminDto) {
     return this.userService.create(createUserDto);
   }
 
@@ -164,7 +164,10 @@ export class UserController {
     description: 'User updated successfully',
   })
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserAdminDto,
+  ) {
     return this.userService.update(id, updateUserDto);
   }
 

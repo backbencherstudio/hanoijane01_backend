@@ -24,4 +24,16 @@ export class CreateAuthDto {
     example: '12345678',
   })
   password: string;
+
+  @ApiProperty({
+    description: 'The name of the company',
+    example: 'John Doe',
+  })
+  companyName?: string;
+
+  @ApiProperty({
+    description: 'The phone number of the user',
+    example: '123456789',
+  })
+  phoneNumber?: string;
 }

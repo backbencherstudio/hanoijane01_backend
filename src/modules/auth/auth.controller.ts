@@ -103,8 +103,10 @@ export class AuthController {
     const result = await auth.api.signUpEmail({
       body: {
         name: body.name || '',
-        email: body.email || '',
+        email: body.email,
         password: body.password,
+        companyName: body.companyName,
+        phoneNumber: body.phoneNumber,
       },
       headers: req.headers as HeadersInit,
     });

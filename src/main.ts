@@ -94,7 +94,6 @@ async function bootstrap() {
       .custom-swagger-search-wrapper {
         max-width: 1460px !important;
         margin: 20px auto 15px auto !important;
-        padding: 0 20px !important;
         box-sizing: border-box !important;
       }
       .custom-swagger-search-input {

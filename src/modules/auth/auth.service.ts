@@ -6,6 +6,7 @@ import {
 
 //internal imports
 import appConfig from '../../config/app.config';
+import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRepository } from '../../common/repository/user/user.repository';
 import { UpdateAuthDto } from './dto/update-auth.dto';
@@ -71,7 +72,7 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    const data: any = {};
+    const data: Prisma.UserUpdateInput = {};
     if (updateUserDto.name) {
       data.name = updateUserDto.name;
     }
