@@ -4,7 +4,11 @@ import * as QRCode from 'qrcode';
 import appConfig from '../../../config/app.config';
 import { ArrayHelper } from '../../helper/array.helper';
 import { Role } from '../../guard/role/role.enum';
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
@@ -140,10 +144,7 @@ export class UserRepository {
       data['email'] = email;
     }
     if (password) {
-      data['password'] = await bcrypt.hash(
-        password,
-        appConfig().security.salt,
-      );
+      data['password'] = await bcrypt.hash(password, appConfig().security.salt);
     }
 
     if (type && ArrayHelper.inArray(type, Object.values(Role))) {
@@ -199,10 +200,7 @@ export class UserRepository {
       data['email'] = email;
     }
     if (password) {
-      data['password'] = await bcrypt.hash(
-        password,
-        appConfig().security.salt,
-      );
+      data['password'] = await bcrypt.hash(password, appConfig().security.salt);
     }
 
     if (ArrayHelper.inArray(type, Object.values(Role))) {

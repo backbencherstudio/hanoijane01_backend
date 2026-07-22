@@ -8,6 +8,10 @@ import {
 } from '@nestjs/swagger';
 import { ExhibitionService } from './exhibition.service';
 import { AuthGuard } from '../../auth/guards/auth.guard';
+import {
+  ResponseLatestExhibitionDto,
+  ResponseStandDetailDto,
+} from './dto/response-exhibition.dto';
 
 @ApiTags('Exhibition')
 @Controller('exhibition')
@@ -21,6 +25,7 @@ export class ExhibitionController {
   })
   @ApiResponse({
     status: 200,
+    type: ResponseLatestExhibitionDto,
     description: 'Exhibition details fetched successfully',
   })
   @Get('latest-one')
@@ -31,11 +36,17 @@ export class ExhibitionController {
   @ApiOperation({
     summary: 'Get stand details by ID',
     description:
-      'Fetches details of a specific stand including category and pricing.',
+      'Fetches details of a specific stand including category, hall, exhibition, and pricing.',
   })
-  @ApiParam({ name: 'standId', description: 'The unique ID of the stand' })
+  @ApiParam({
+    name: 'standId',
+    type: String,
+    required: true,
+    description: 'The unique ID of the stand',
+  })
   @ApiResponse({
     status: 200,
+    type: ResponseStandDetailDto,
     description: 'Stand details fetched successfully',
   })
   @ApiResponse({

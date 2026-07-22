@@ -4,10 +4,16 @@ export class PaymentTransactionDto {
   @ApiProperty({ example: 'clx1abc...', description: 'Transaction ID' })
   id: string;
 
-  @ApiProperty({ example: 'pi_3M2w1kL...', description: 'Payment reference number / ID from gateway' })
+  @ApiProperty({
+    example: 'pi_3M2w1kL...',
+    description: 'Payment reference number / ID from gateway',
+  })
   referenceNumber: string;
 
-  @ApiProperty({ example: 'succeeded', description: 'succeeded | failed | pending | canceled' })
+  @ApiProperty({
+    example: 'succeeded',
+    description: 'succeeded | failed | pending | canceled',
+  })
   status: string;
 
   @ApiProperty({ example: 'stripe', description: 'Payment provider name' })
@@ -19,7 +25,11 @@ export class PaymentTransactionDto {
   @ApiProperty({ example: 'usd', description: 'Requested currency' })
   currency: string;
 
-  @ApiProperty({ example: 49.99, description: 'Actually paid amount', nullable: true })
+  @ApiProperty({
+    example: 49.99,
+    description: 'Actually paid amount',
+    nullable: true,
+  })
   paidAmount: number | null;
 
   @ApiProperty({ example: 'usd', description: 'Paid currency', nullable: true })

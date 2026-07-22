@@ -1,6 +1,12 @@
 import { Controller, Get, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Role } from '../../common/guard/role/role.enum';
 import { Roles } from '../../common/guard/role/roles.decorator';
 import { RolesGuard } from '../../common/guard/role/roles.guard';
@@ -9,7 +15,7 @@ import { Request } from 'express';
 import {
   NotificationActionResponse,
   NotificationListResponse,
-} from './dto/notification-response.dto';
+} from './dto/response-notification.dto';
 
 @ApiBearerAuth()
 @ApiTags('Notification')
@@ -21,7 +27,8 @@ export class NotificationController {
 
   @ApiOperation({
     summary: 'Get all notifications',
-    description: 'Fetches all notifications stored in the database. Returns user-specific notifications and system-wide notifications for admins.',
+    description:
+      'Fetches all notifications stored in the database. Returns user-specific notifications and system-wide notifications for admins.',
   })
   @ApiResponse({
     status: 200,
@@ -57,7 +64,8 @@ export class NotificationController {
 
   @ApiOperation({
     summary: 'Delete all notifications',
-    description: "Permanently deletes all notifications assigned to the user or system notifications from the database.",
+    description:
+      'Permanently deletes all notifications assigned to the user or system notifications from the database.',
   })
   @ApiResponse({
     status: 200,

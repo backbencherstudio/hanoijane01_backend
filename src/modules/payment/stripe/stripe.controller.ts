@@ -10,8 +10,14 @@ import {
 import { StripeService } from './stripe.service';
 import { Request } from 'express';
 import { ApiOperation, ApiResponse, ApiTags, ApiBody } from '@nestjs/swagger';
-import { CreateBookingCheckoutDto, CreatePaymentIntentDto } from './dto/create-checkout.dto';
-import { CheckoutSessionResponse, PaymentIntentResponse } from './dto/payment-response.dto';
+import {
+  CreateBookingCheckoutDto,
+  CreatePaymentIntentDto,
+} from './dto/create-checkout.dto';
+import {
+  CheckoutSessionResponse,
+  PaymentIntentResponse,
+} from './dto/response-stripe.dto';
 
 @ApiTags('Payment')
 @Controller('payment/stripe')
@@ -33,7 +39,8 @@ export class StripeController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Stand is already booked by another user or invalid parameters',
+    description:
+      'Stand is already booked by another user or invalid parameters',
   })
   @Post('create-checkout-session')
   async createCheckoutSession(
@@ -41,7 +48,10 @@ export class StripeController {
     @Req() req: Request,
   ) {
     const userId = req.user?.id;
-    const result = await this.stripeService.createBookingCheckoutSession(dto, userId);
+    const result = await this.stripeService.createBookingCheckoutSession(
+      dto,
+      userId,
+    );
     return {
       success: true,
       data: result,
@@ -61,7 +71,8 @@ export class StripeController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Stand is already booked by another user or invalid parameters',
+    description:
+      'Stand is already booked by another user or invalid parameters',
   })
   @Post('create-payment-intent')
   async createPaymentIntent(
@@ -69,7 +80,10 @@ export class StripeController {
     @Req() req: Request,
   ) {
     const userId = req.user?.id;
-    const result = await this.stripeService.createBookingPaymentIntent(dto, userId);
+    const result = await this.stripeService.createBookingPaymentIntent(
+      dto,
+      userId,
+    );
     return {
       success: true,
       data: result,
@@ -100,10 +114,14 @@ export class StripeController {
 
     let event: any;
     try {
-      const payload = req.rawBody ? req.rawBody.toString() : JSON.stringify(req.body);
+      const payload = req.rawBody
+        ? req.rawBody.toString()
+        : JSON.stringify(req.body);
       event = this.stripeService.handleWebhook(payload, signature);
     } catch (err) {
-      this.logger.error(`Stripe Webhook signature verification failed: ${err.message}`);
+      this.logger.error(
+        `Stripe Webhook signature verification failed: ${err.message}`,
+      );
       throw new BadRequestException(`Webhook Error: ${err.message}`);
     }
 
@@ -112,11 +130,15 @@ export class StripeController {
     try {
       switch (event.type) {
         case 'checkout.session.completed':
-          await this.stripeService.handleCheckoutSessionCompleted(event.data.object);
+          await this.stripeService.handleCheckoutSessionCompleted(
+            event.data.object,
+          );
           break;
 
         case 'payment_intent.succeeded':
-          await this.stripeService.handlePaymentIntentSucceeded(event.data.object);
+          await this.stripeService.handlePaymentIntentSucceeded(
+            event.data.object,
+          );
           break;
 
         case 'payment_intent.payment_failed':
@@ -124,7 +146,9 @@ export class StripeController {
           break;
 
         case 'payment_intent.canceled':
-          await this.stripeService.handlePaymentIntentCanceled(event.data.object);
+          await this.stripeService.handlePaymentIntentCanceled(
+            event.data.object,
+          );
           break;
 
         case 'charge.refunded':
@@ -137,7 +161,10 @@ export class StripeController {
 
       return { received: true };
     } catch (error) {
-      this.logger.error(`Error processing webhook event ${event.type}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error processing webhook event ${event.type}: ${error.message}`,
+        error.stack,
+      );
       return { received: true, processed: false, error: error.message };
     }
   }

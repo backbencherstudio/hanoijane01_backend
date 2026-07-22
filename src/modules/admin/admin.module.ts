@@ -3,6 +3,7 @@ import { PaymentTransactionModule } from './payment-transaction/payment-transact
 import { UserModule } from './user/user.module';
 import { BookingModule } from './booking/booking.module';
 import { ExhibitionModule } from './exhibition/exhibition.module';
+import { OverviewModule } from './overview/overview.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { ExhibitionModule } from './exhibition/exhibition.module';
     UserModule,
     BookingModule,
     ExhibitionModule,
+    OverviewModule,
   ],
 })
 export class AdminModule {}

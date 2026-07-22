@@ -12,7 +12,9 @@ export class StripeSyncProcessor extends WorkerHost {
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
-    this.logger.log(`Processing BullMQ Stripe Sync Job: ${job.name} (ID: ${job.id})`);
+    this.logger.log(
+      `Processing BullMQ Stripe Sync Job: ${job.name} (ID: ${job.id})`,
+    );
 
     try {
       const result = await this.stripeService.syncAllPendingBookings();
@@ -21,7 +23,10 @@ export class StripeSyncProcessor extends WorkerHost {
       );
       return result;
     } catch (error) {
-      this.logger.error(`Error executing Stripe Sync Job ${job.id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error executing Stripe Sync Job ${job.id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

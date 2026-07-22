@@ -112,11 +112,15 @@ export class StripePayment {
     return Stripe.charges.retrieve(chargeId);
   }
 
-  static async getPaymentIntent(paymentIntentId: string): Promise<stripe.PaymentIntent> {
+  static async getPaymentIntent(
+    paymentIntentId: string,
+  ): Promise<stripe.PaymentIntent> {
     return Stripe.paymentIntents.retrieve(paymentIntentId);
   }
 
-  static async getCheckoutSession(sessionId: string): Promise<stripe.Checkout.Session> {
+  static async getCheckoutSession(
+    sessionId: string,
+  ): Promise<stripe.Checkout.Session> {
     return Stripe.checkout.sessions.retrieve(sessionId);
   }
 

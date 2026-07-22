@@ -58,7 +58,7 @@ export class AuthService {
     };
   }
 
-  /** 
+  /**
    * Update user details
    */
   async updateUser(

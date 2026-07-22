@@ -7,15 +7,7 @@ import { TransactionRepository } from './transaction/transaction.repository';
 @Global()
 @Module({
   imports: [PrismaModule],
-  providers: [
-    UserRepository,
-    NotificationRepository,
-    TransactionRepository,
-  ],
-  exports: [
-    UserRepository,
-    NotificationRepository,
-    TransactionRepository,
-  ],
+  providers: [UserRepository, NotificationRepository, TransactionRepository],
+  exports: [UserRepository, NotificationRepository, TransactionRepository],
 })
 export class RepositoryModule {}

@@ -41,7 +41,7 @@ import {
   LoginSuccessResponse,
   MeSuccessResponse,
   SignupSuccessResponse,
-} from './dto/auth-response.dto';
+} from './dto/response-auth.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { Session, UserSession } from './decorators/session.decorator';
 import { auth } from './auth';
@@ -61,7 +61,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Login with email and password',
-    description: 'Authenticates a user using email and password, returning session details, set-cookie headers, and an auth token.',
+    description:
+      'Authenticates a user using email and password, returning session details, set-cookie headers, and an auth token.',
   })
   @ApiBody({ type: LoginAuthDto })
   @ApiResponse({
@@ -88,7 +89,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Register a new user',
-    description: 'Registers a new user record in the database and triggers an email verification code (OTP) to the registered email address.',
+    description:
+      'Registers a new user record in the database and triggers an email verification code (OTP) to the registered email address.',
   })
   @ApiBody({ type: CreateAuthDto })
   @ApiResponse({
@@ -97,10 +99,7 @@ export class AuthController {
     description: 'Signup successful — OTP sent to email',
   })
   @Post('signup')
-  async signup(
-    @Body() body: CreateAuthDto, 
-    @Req() req: Request
-  ) {
+  async signup(@Body() body: CreateAuthDto, @Req() req: Request) {
     const result = await auth.api.signUpEmail({
       body: {
         name: body.name || '',
@@ -114,7 +113,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Logout current session',
-    description: 'Clears the user session both on the database side and removes the local auth cookies by sending clear cookie headers.',
+    description:
+      'Clears the user session both on the database side and removes the local auth cookies by sending clear cookie headers.',
   })
   @ApiBearerAuth()
   @ApiResponse({
@@ -123,10 +123,7 @@ export class AuthController {
     description: 'Logged out successfully',
   })
   @Post('logout')
-  async logout(
-    @Req() req: Request, 
-    @Res({ passthrough: true }) res: Response
-  ) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const result = await auth.api.signOut({
       headers: req.headers as HeadersInit,
       returnHeaders: true,
@@ -137,7 +134,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Forgot password',
-    description: 'Sends a 5-digit verification OTP (One-Time Password) code to the registered email address to initiate the password reset sequence.',
+    description:
+      'Sends a 5-digit verification OTP (One-Time Password) code to the registered email address to initiate the password reset sequence.',
   })
   @ApiBody({ type: ForgotPasswordAuthDto })
   @ApiResponse({
@@ -159,7 +157,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Reset password',
-    description: 'Resets the user password by validating the email address and matching the 5-digit OTP sent to their email.',
+    description:
+      'Resets the user password by validating the email address and matching the 5-digit OTP sent to their email.',
   })
   @ApiBody({ type: ResetPasswordAuthDto })
   @ApiResponse({
@@ -178,7 +177,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Verify email with OTP',
-    description: "Verifies the user's email address by passing the 5-digit signup OTP sent to their inbox, activating their session directly.",
+    description:
+      "Verifies the user's email address by passing the 5-digit signup OTP sent to their inbox, activating their session directly.",
   })
   @ApiBody({ type: VerifyEmailAuthDto })
   @ApiResponse({
@@ -203,7 +203,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Resend verification email OTP',
-    description: 'Resends a fresh 5-digit verification OTP (One-Time Password) to the user email for account verification.',
+    description:
+      'Resends a fresh 5-digit verification OTP (One-Time Password) to the user email for account verification.',
   })
   @ApiBody({ type: ResendVerificationAuthDto })
   @ApiResponse({
@@ -228,7 +229,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Get current user profile',
-    description: 'Fetches the profile details of the currently authenticated user based on their session token.',
+    description:
+      'Fetches the profile details of the currently authenticated user based on their session token.',
   })
   @ApiBearerAuth()
   @ApiResponse({
@@ -244,7 +246,8 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Update user profile',
-    description: 'Updates the profile fields (name, phone, company info) and supports uploading a new avatar image using Multipart form-data.',
+    description:
+      'Updates the profile fields (name, phone, company info) and supports uploading a new avatar image using Multipart form-data.',
   })
   @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')

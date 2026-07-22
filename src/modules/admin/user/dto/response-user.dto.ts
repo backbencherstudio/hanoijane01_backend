@@ -33,7 +33,10 @@ export class AdminUserDetailDto extends AdminUserDto {
   @ApiProperty({ example: 'avatar_img.png', nullable: true })
   avatar: string | null;
 
-  @ApiProperty({ example: 'http://localhost:4000/storage/avatar_img.png', nullable: true })
+  @ApiProperty({
+    example: 'http://localhost:4000/storage/avatar_img.png',
+    nullable: true,
+  })
   avatar_url?: string;
 
   @ApiProperty({ example: 'cus_abc123...', nullable: true })

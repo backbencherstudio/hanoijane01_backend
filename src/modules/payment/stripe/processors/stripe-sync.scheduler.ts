@@ -11,7 +11,9 @@ export class StripeSyncScheduler implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    this.logger.log('Initializing recurring Stripe Reconciliation Queue Scheduler (Every 15 mins)...');
+    this.logger.log(
+      'Initializing recurring Stripe Reconciliation Queue Scheduler (Every 15 mins)...',
+    );
 
     try {
       // Register recurring job in BullMQ Redis queue
@@ -26,9 +28,13 @@ export class StripeSyncScheduler implements OnModuleInit {
           removeOnFail: 100,
         },
       );
-      this.logger.log('Successfully scheduled recurring Stripe reconciliation job in BullMQ Redis.');
+      this.logger.log(
+        'Successfully scheduled recurring Stripe reconciliation job in BullMQ Redis.',
+      );
     } catch (error) {
-      this.logger.error(`Failed to register recurring Stripe sync job: ${error.message}`);
+      this.logger.error(
+        `Failed to register recurring Stripe sync job: ${error.message}`,
+      );
     }
   }
 }

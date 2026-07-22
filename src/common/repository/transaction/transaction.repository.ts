@@ -53,9 +53,12 @@ export class TransactionRepository {
     if (params.referenceNumber) data.referenceNumber = params.referenceNumber;
     if (params.status) data.status = params.status;
     if (params.rawStatus) data.rawStatus = params.rawStatus;
-    if (params.stripeCustomerId) data.stripeCustomerId = params.stripeCustomerId;
-    if (params.stripePaymentIntentId) data.stripePaymentIntentId = params.stripePaymentIntentId;
-    if (params.stripeCheckoutSessionId) data.stripeCheckoutSessionId = params.stripeCheckoutSessionId;
+    if (params.stripeCustomerId)
+      data.stripeCustomerId = params.stripeCustomerId;
+    if (params.stripePaymentIntentId)
+      data.stripePaymentIntentId = params.stripePaymentIntentId;
+    if (params.stripeCheckoutSessionId)
+      data.stripeCheckoutSessionId = params.stripeCheckoutSessionId;
     if (params.stripeChargeId) data.stripeChargeId = params.stripeChargeId;
     if (params.receiptUrl) data.receiptUrl = params.receiptUrl;
 
@@ -73,13 +76,18 @@ export class TransactionRepository {
     if (params.paidCurrency) data.paidCurrency = params.paidCurrency;
     if (params.stripeChargeId) data.stripeChargeId = params.stripeChargeId;
     if (params.receiptUrl) data.receiptUrl = params.receiptUrl;
-    if (params.stripePaymentIntentId) data.stripePaymentIntentId = params.stripePaymentIntentId;
-    if (params.stripeCheckoutSessionId) data.stripeCheckoutSessionId = params.stripeCheckoutSessionId;
+    if (params.stripePaymentIntentId)
+      data.stripePaymentIntentId = params.stripePaymentIntentId;
+    if (params.stripeCheckoutSessionId)
+      data.stripeCheckoutSessionId = params.stripeCheckoutSessionId;
 
     const whereOr: any[] = [];
-    if (params.referenceNumber) whereOr.push({ referenceNumber: params.referenceNumber });
-    if (params.stripeCheckoutSessionId) whereOr.push({ stripeCheckoutSessionId: params.stripeCheckoutSessionId });
-    if (params.stripePaymentIntentId) whereOr.push({ stripePaymentIntentId: params.stripePaymentIntentId });
+    if (params.referenceNumber)
+      whereOr.push({ referenceNumber: params.referenceNumber });
+    if (params.stripeCheckoutSessionId)
+      whereOr.push({ stripeCheckoutSessionId: params.stripeCheckoutSessionId });
+    if (params.stripePaymentIntentId)
+      whereOr.push({ stripePaymentIntentId: params.stripePaymentIntentId });
 
     if (whereOr.length === 0) {
       return null;
@@ -106,7 +114,13 @@ export class TransactionRepository {
     rawStatus,
   }: {
     bookingId: string;
-    paymentStatus: 'paid' | 'failed' | 'canceled' | 'refunded' | 'unpaid' | 'conflict_refund_needed';
+    paymentStatus:
+      | 'paid'
+      | 'failed'
+      | 'canceled'
+      | 'refunded'
+      | 'unpaid'
+      | 'conflict_refund_needed';
     paymentIntentId?: string;
     checkoutSessionId?: string;
     customerId?: string;
@@ -126,7 +140,10 @@ export class TransactionRepository {
     }
 
     const isPaid = paymentStatus === 'paid';
-    const isFailedOrCanceled = paymentStatus === 'failed' || paymentStatus === 'canceled' || paymentStatus === 'refunded';
+    const isFailedOrCanceled =
+      paymentStatus === 'failed' ||
+      paymentStatus === 'canceled' ||
+      paymentStatus === 'refunded';
 
     // Race Condition Check: If stand was already locked by another user before this payment finished
     if (isPaid && booking.standId && booking.stand) {
@@ -141,8 +158,10 @@ export class TransactionRepository {
           data: {
             paymentStatus: 'conflict_refund_needed',
             status: 0,
-            stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
-            stripeCheckoutSessionId: checkoutSessionId || booking.stripeCheckoutSessionId,
+            stripePaymentIntentId:
+              paymentIntentId || booking.stripePaymentIntentId,
+            stripeCheckoutSessionId:
+              checkoutSessionId || booking.stripeCheckoutSessionId,
           },
         });
 
@@ -155,9 +174,14 @@ export class TransactionRepository {
       where: { id: bookingId },
       data: {
         paymentStatus,
-        status: isPaid ? 1 : isFailedOrCanceled && paymentStatus === 'canceled' ? 0 : booking.status,
+        status: isPaid
+          ? 1
+          : isFailedOrCanceled && paymentStatus === 'canceled'
+            ? 0
+            : booking.status,
         stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
-        stripeCheckoutSessionId: checkoutSessionId || booking.stripeCheckoutSessionId,
+        stripeCheckoutSessionId:
+          checkoutSessionId || booking.stripeCheckoutSessionId,
         stripeCustomerId: customerId || booking.stripeCustomerId,
         paidAt: isPaid ? new Date() : booking.paidAt,
       },
@@ -168,7 +192,11 @@ export class TransactionRepository {
       await this.prisma.stand.update({
         where: { id: booking.standId },
         data: {
-          isAvailable: isPaid ? 0 : isFailedOrCanceled ? 1 : booking.stand?.isAvailable ?? 1,
+          isAvailable: isPaid
+            ? 0
+            : isFailedOrCanceled
+              ? 1
+              : (booking.stand?.isAvailable ?? 1),
         },
       });
     }
@@ -177,8 +205,12 @@ export class TransactionRepository {
     const existingTransaction = await this.prisma.paymentTransaction.findFirst({
       where: {
         OR: [
-          ...(checkoutSessionId ? [{ stripeCheckoutSessionId: checkoutSessionId }] : []),
-          ...(paymentIntentId ? [{ stripePaymentIntentId: paymentIntentId }] : []),
+          ...(checkoutSessionId
+            ? [{ stripeCheckoutSessionId: checkoutSessionId }]
+            : []),
+          ...(paymentIntentId
+            ? [{ stripePaymentIntentId: paymentIntentId }]
+            : []),
           { bookingId: bookingId },
         ],
       },
@@ -192,10 +224,15 @@ export class TransactionRepository {
         data: {
           status: txStatus,
           rawStatus: rawStatus || txStatus,
-          paidAmount: isPaid && amount !== undefined ? amount : existingTransaction.paidAmount,
+          paidAmount:
+            isPaid && amount !== undefined
+              ? amount
+              : existingTransaction.paidAmount,
           paidCurrency: currency || existingTransaction.paidCurrency,
-          stripePaymentIntentId: paymentIntentId || existingTransaction.stripePaymentIntentId,
-          stripeCheckoutSessionId: checkoutSessionId || existingTransaction.stripeCheckoutSessionId,
+          stripePaymentIntentId:
+            paymentIntentId || existingTransaction.stripePaymentIntentId,
+          stripeCheckoutSessionId:
+            checkoutSessionId || existingTransaction.stripeCheckoutSessionId,
           stripeCustomerId: customerId || existingTransaction.stripeCustomerId,
           receiptUrl: receiptUrl || existingTransaction.receiptUrl,
         },
@@ -207,7 +244,11 @@ export class TransactionRepository {
           userId: booking.userId,
           amount: amount !== undefined ? amount : Number(booking.totalAmount),
           currency: currency || booking.currency || 'usd',
-          paidAmount: isPaid ? (amount !== undefined ? amount : Number(booking.totalAmount)) : 0,
+          paidAmount: isPaid
+            ? amount !== undefined
+              ? amount
+              : Number(booking.totalAmount)
+            : 0,
           paidCurrency: currency || booking.currency || 'usd',
           provider: 'stripe',
           referenceNumber: paymentIntentId || checkoutSessionId || bookingId,

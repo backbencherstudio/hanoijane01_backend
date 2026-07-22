@@ -1,6 +1,20 @@
-import { Controller, Get, Post, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { PaymentTransactionService } from './payment-transaction.service';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 import { Role } from '../../../common/guard/role/role.enum';
@@ -11,7 +25,7 @@ import {
   PaymentTransactionActionResponse,
   PaymentTransactionDetailResponse,
   PaymentTransactionListResponse,
-} from './dto/payment-transaction-response.dto';
+} from './dto/response-payment-transaction.dto';
 
 @ApiBearerAuth()
 @ApiTags('Payment transaction')
@@ -26,7 +40,8 @@ export class PaymentTransactionController {
 
   @ApiOperation({
     summary: 'Get all payment transactions',
-    description: 'Fetches a list of all payment transactions recorded in the database. Vendors are restricted to viewing only their own transactions, while admins can view all.',
+    description:
+      'Fetches a list of all payment transactions recorded in the database. Vendors are restricted to viewing only their own transactions, while admins can view all.',
   })
   @ApiResponse({
     status: 200,
@@ -41,7 +56,8 @@ export class PaymentTransactionController {
 
   @ApiOperation({
     summary: 'Trigger full Stripe reconciliation sync',
-    description: 'Scans all pending/unpaid bookings and queries Stripe API to reconcile payment status, reserve stalls, and update transactions.',
+    description:
+      'Scans all pending/unpaid bookings and queries Stripe API to reconcile payment status, reserve stalls, and update transactions.',
   })
   @ApiResponse({
     status: 200,
@@ -60,7 +76,8 @@ export class PaymentTransactionController {
 
   @ApiOperation({
     summary: 'Manually sync a specific booking against Stripe',
-    description: 'Queries Stripe for the payment status of a specific booking ID and updates the database, stall reservation, and transaction records.',
+    description:
+      'Queries Stripe for the payment status of a specific booking ID and updates the database, stall reservation, and transaction records.',
   })
   @ApiParam({
     name: 'id',
@@ -85,7 +102,8 @@ export class PaymentTransactionController {
 
   @ApiOperation({
     summary: 'Get details of a single transaction',
-    description: 'Fetches the full details of a specific payment transaction identified by its ID.',
+    description:
+      'Fetches the full details of a specific payment transaction identified by its ID.',
   })
   @ApiParam({
     name: 'id',
@@ -106,7 +124,8 @@ export class PaymentTransactionController {
 
   @ApiOperation({
     summary: 'Delete a payment transaction by id',
-    description: 'Permanently deletes the payment transaction record identified by its ID from the database.',
+    description:
+      'Permanently deletes the payment transaction record identified by its ID from the database.',
   })
   @ApiParam({
     name: 'id',

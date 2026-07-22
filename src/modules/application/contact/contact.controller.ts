@@ -9,6 +9,7 @@ import { ContactService } from './contact.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { OptionalAuthGuard } from '../../auth/guards/optional-auth.guard';
 import { Session, UserSession } from '../../auth/decorators/session.decorator';
+import { ResponseContactDto } from './dto/response-contact.dto';
 
 @ApiTags('Contact')
 @Controller('contact')
@@ -22,6 +23,7 @@ export class ContactController {
   })
   @ApiResponse({
     status: 201,
+    type: ResponseContactDto,
     description: 'Contact message submitted successfully',
   })
   @ApiBearerAuth()

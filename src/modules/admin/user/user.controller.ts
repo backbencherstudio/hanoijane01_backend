@@ -28,7 +28,7 @@ import {
   AdminUserActionResponse,
   AdminUserDetailResponse,
   AdminUserListResponse,
-} from './dto/user-response.dto';
+} from './dto/response-user.dto';
 
 @ApiBearerAuth()
 @ApiTags('User')
@@ -40,7 +40,8 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Create a new user',
-    description: 'Creates a new user record inside the database with the provided name, email, password, and type role.',
+    description:
+      'Creates a new user record inside the database with the provided name, email, password, and type role.',
   })
   @ApiResponse({
     status: 201,
@@ -54,25 +55,29 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Get all users with filters',
-    description: 'Fetches a list of all registered users, allowing filtering by keyword search, role type, or approval status.',
+    description:
+      'Fetches a list of all registered users, allowing filtering by keyword search, role type, or approval status.',
   })
   @ApiQuery({
     name: 'q',
     required: false,
     type: String,
-    description: 'Search string to filter users by name or email (case-insensitive partial match).',
+    description:
+      'Search string to filter users by name or email (case-insensitive partial match).',
   })
   @ApiQuery({
     name: 'type',
     required: false,
     type: String,
-    description: 'Role/Type of users to retrieve. E.g., "user", "admin", "vendor".',
+    description:
+      'Role/Type of users to retrieve. E.g., "user", "admin", "vendor".',
   })
   @ApiQuery({
     name: 'approved',
     required: false,
     type: String,
-    description: 'Approval filter status. Pass "approved" to get approved users, otherwise gets users with pending/null approvals.',
+    description:
+      'Approval filter status. Pass "approved" to get approved users, otherwise gets users with pending/null approvals.',
   })
   @ApiResponse({
     status: 200,
@@ -92,7 +97,8 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Approve a user',
-    description: "Sets the user's approval date to the current time, granting them full access as a verified user.",
+    description:
+      "Sets the user's approval date to the current time, granting them full access as a verified user.",
   })
   @ApiParam({
     name: 'id',
@@ -113,7 +119,8 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Reject/Unapprove a user',
-    description: "Clears the user's approval timestamp (sets approvedAt to null), blocking or unapproving their access.",
+    description:
+      "Clears the user's approval timestamp (sets approvedAt to null), blocking or unapproving their access.",
   })
   @ApiParam({
     name: 'id',
@@ -134,7 +141,8 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Get details of a user by id',
-    description: 'Fetches the detailed user profile including company and billing information by their ID.',
+    description:
+      'Fetches the detailed user profile including company and billing information by their ID.',
   })
   @ApiParam({
     name: 'id',
@@ -154,7 +162,8 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Update a user by id',
-    description: "Updates the fields of the user record identified by their ID.",
+    description:
+      'Updates the fields of the user record identified by their ID.',
   })
   @ApiParam({
     name: 'id',
@@ -174,7 +183,8 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Delete a user by id',
-    description: "Permanently deletes the user record identified by their ID from the database.",
+    description:
+      'Permanently deletes the user record identified by their ID from the database.',
   })
   @ApiParam({
     name: 'id',
