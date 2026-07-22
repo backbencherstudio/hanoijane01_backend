@@ -1,9 +1,21 @@
+function resolveEnvValue(value: string | undefined): string | undefined {
+  if (!value) return value;
+  let resolved = value;
+  resolved = resolved.replace(/\${PORT}/g, process.env.PORT || '3000');
+  const appUrl = process.env.APP_URL 
+    ? process.env.APP_URL.replace(/\${PORT}/g, process.env.PORT || '3000') 
+    : 'http://localhost:3000';
+  resolved = resolved.replace(/\${APP_URL}/g, appUrl);
+  resolved = resolved.replace(/\${APP_NAME}/g, process.env.APP_NAME || '');
+  return resolved;
+}
+
 export default () => ({
   app: {
     name: process.env.APP_NAME,
     key: process.env.APP_KEY,
-    url: process.env.APP_URL,
-    client_app_url: process.env.CLIENT_APP_URL,
+    url: resolveEnvValue(process.env.APP_URL),
+    client_app_url: resolveEnvValue(process.env.CLIENT_APP_URL),
     port: parseInt(process.env.PORT, 10) || 3000,
   },
 
@@ -51,14 +63,14 @@ export default () => ({
     port: process.env.MAIL_PORT || 587,
     user: process.env.MAIL_USERNAME,
     password: process.env.MAIL_PASSWORD,
-    from: process.env.MAIL_FROM_ADDRESS,
+    from: resolveEnvValue(process.env.MAIL_FROM_ADDRESS),
   },
 
   auth: {
     google: {
       app_id: process.env.GOOGLE_APP_ID,
       app_secret: process.env.GOOGLE_APP_SECRET,
-      callback: process.env.GOOGLE_CALLBACK_URL,
+      callback: resolveEnvValue(process.env.GOOGLE_CALLBACK_URL),
     },
   },
 
