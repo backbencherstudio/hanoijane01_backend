@@ -12,11 +12,11 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { QueryUserDto } from './dto/query-user.dto';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -28,6 +28,7 @@ import {
   AdminUserActionResponse,
   AdminUserDetailResponse,
   AdminUserListResponse,
+  AdminUserStatsResponseDto,
 } from './dto/response-user.dto';
 
 @ApiBearerAuth()
@@ -39,9 +40,24 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @ApiOperation({
-    summary: 'Create a new user',
+    summary: 'Get user dashboard statistics (Admin)',
     description:
-      'Creates a new user record inside the database with the provided name, email, password, and type role.',
+      'Retrieves summary counts for Total Users, Active Users (status=1), Inactive Users (status=0), and Banned Users (status=2).',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminUserStatsResponseDto,
+    description: 'User statistics retrieved successfully',
+  })
+  @Get('stats')
+  async getStats() {
+    return this.userService.getStats();
+  }
+
+  @ApiOperation({
+    summary: 'Create a new user / admin profile',
+    description:
+      'Creates a new user record in the database with name, email, password, status (1=Active, 0=Inactive, 2=Banned), and type role (user | admin).',
   })
   @ApiResponse({
     status: 201,
@@ -54,45 +70,18 @@ export class UserController {
   }
 
   @ApiOperation({
-    summary: 'Get all users with filters',
+    summary: 'Get all users with search, filters, and pagination',
     description:
-      'Fetches a list of all registered users, allowing filtering by keyword search, role type, or approval status.',
-  })
-  @ApiQuery({
-    name: 'q',
-    required: false,
-    type: String,
-    description:
-      'Search string to filter users by name or email (case-insensitive partial match).',
-  })
-  @ApiQuery({
-    name: 'type',
-    required: false,
-    type: String,
-    description:
-      'Role/Type of users to retrieve. E.g., "user", "admin", "vendor".',
-  })
-  @ApiQuery({
-    name: 'approved',
-    required: false,
-    type: String,
-    description:
-      'Approval filter status. Pass "approved" to get approved users, otherwise gets users with pending/null approvals.',
+      'Fetches a paginated list of all registered users with search (name/email), status filter (1=active, 0=inactive, 2=banned), type filter (user/admin/vendor), and pagination parameters (page, limit). Each item includes user type and status text.',
   })
   @ApiResponse({
     status: 200,
     type: AdminUserListResponse,
-    description: 'List of all users',
+    description: 'Paginated list of users',
   })
   @Get()
-  async findAll(
-    @Query() query: { q?: string; type?: string; approved?: string },
-  ) {
-    const q = query.q;
-    const type = query.type;
-    const approved = query.approved;
-
-    return this.userService.findAll({ q, type, approved });
+  async findAll(@Query() query: QueryUserDto) {
+    return this.userService.findAll(query);
   }
 
   @ApiOperation({
@@ -106,7 +95,6 @@ export class UserController {
     required: true,
     description: 'The unique ID of the user record to approve.',
   })
-  @Roles(Role.ADMIN)
   @ApiResponse({
     status: 200,
     type: AdminUserActionResponse,
@@ -128,7 +116,6 @@ export class UserController {
     required: true,
     description: 'The unique ID of the user record to reject or unapprove.',
   })
-  @Roles(Role.ADMIN)
   @ApiResponse({
     status: 200,
     type: AdminUserActionResponse,
@@ -142,7 +129,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Get details of a user by id',
     description:
-      'Fetches the detailed user profile including company and billing information by their ID.',
+      'Fetches the detailed user profile including type, status, company and billing information by their ID.',
   })
   @ApiParam({
     name: 'id',

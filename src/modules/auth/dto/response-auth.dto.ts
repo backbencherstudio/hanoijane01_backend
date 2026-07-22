@@ -51,21 +51,17 @@ export class LoginSuccessResponse {
   data: LoginResponseData;
 }
 
+export class SignupResponseData {
+  @ApiProperty({ type: AuthUserDto })
+  user: AuthUserDto;
+}
+
 export class SignupSuccessResponse {
   @ApiProperty({ example: true })
   success: boolean;
 
-  @ApiProperty({
-    example: {
-      user: {
-        id: 'clx1abc...',
-        name: 'John Doe',
-        email: 'john@example.com',
-        emailVerified: false,
-      },
-    },
-  })
-  data: any;
+  @ApiProperty({ type: SignupResponseData })
+  data: SignupResponseData;
 }
 
 // ─── Me ──────────────────────────────────────────────────────────────────────

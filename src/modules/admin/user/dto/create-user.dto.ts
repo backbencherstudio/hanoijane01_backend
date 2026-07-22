@@ -1,8 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsEmail,
+  IsString,
+  MinLength,
+  IsInt,
+  IsIn,
+} from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty()
+  @IsString()
   @ApiProperty({
     description: 'The name of the user',
     example: 'John Doe',
@@ -10,6 +19,7 @@ export class CreateUserDto {
   name: string;
 
   @IsNotEmpty()
+  @IsEmail()
   @ApiProperty({
     description: 'The email of the user',
     example: 'john.doe@example.com',
@@ -17,16 +27,29 @@ export class CreateUserDto {
   email: string;
 
   @IsNotEmpty()
+  @IsString()
+  @MinLength(6, { message: 'Password should be minimum 6 characters' })
   @ApiProperty({
     description: 'The password of the user',
-    example: 'password',
+    example: 'password123',
   })
   password: string;
 
   @IsOptional()
-  @ApiProperty({
-    description: 'The type of the user',
-    example: 'user',
+  @IsIn(['user', 'admin'], { message: 'Type must be either user or admin' })
+  @ApiPropertyOptional({
+    description: 'The type/role of the user (user | admin)',
+    example: 'admin',
+    enum: ['user', 'admin'],
   })
   type?: string;
+
+  @IsOptional()
+  @IsInt()
+  @ApiPropertyOptional({
+    description: 'Status of the user (1 = Active, 0 = Inactive, 2 = Banned)',
+    example: 1,
+    default: 1,
+  })
+  status?: number;
 }

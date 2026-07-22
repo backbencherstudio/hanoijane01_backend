@@ -10,7 +10,10 @@ import { AuthGuard } from '../../auth/guards/auth.guard';
 import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { Roles } from '../../../common/guard/role/roles.decorator';
 import { Role } from '../../../common/guard/role/role.enum';
-import { OverviewStatsResponseDto } from './dto/response-overview.dto';
+import {
+  OverviewStatsResponseDto,
+  StandVsHallChartResponseDto,
+} from './dto/response-overview.dto';
 import { QueryOverviewDto } from './dto/query-overview.dto';
 
 @ApiBearerAuth()
@@ -34,6 +37,21 @@ export class OverviewController {
   @Get('stats')
   async getStats(@Query() queryDto: QueryOverviewDto) {
     return this.overviewService.getStats(queryDto.exhibitionId);
+  }
+
+  @ApiOperation({
+    summary: 'Get Stand vs Hall chart data (Admin)',
+    description:
+      'Retrieves total seats/stands, booked stands, and available stands grouped by Hall for the dashboard bar chart.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: StandVsHallChartResponseDto,
+    description: 'Stand vs Hall chart data retrieved successfully',
+  })
+  @Get('stand-vs-hall')
+  async getStandVsHallChart(@Query() queryDto: QueryOverviewDto) {
+    return this.overviewService.getStandVsHallChart(queryDto.exhibitionId);
   }
 
   @ApiOperation({

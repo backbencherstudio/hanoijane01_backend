@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { Prisma } from 'prisma/generated/client';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 
@@ -72,7 +73,7 @@ export class BookingService {
 
     await this.prisma.booking.update({
       where: { id },
-      data: updateBookingDto as any,
+      data: updateBookingDto as Prisma.BookingUpdateInput,
     });
 
     return {

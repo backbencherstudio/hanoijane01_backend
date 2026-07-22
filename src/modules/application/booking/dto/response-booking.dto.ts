@@ -60,6 +60,41 @@ export class AppBookingListResponseDto {
   meta_data: AppBookingMetaDataDto;
 }
 
+export class AppBookingCreatedDataDto {
+  @ApiProperty({ example: 'clx1booking...' })
+  id: string;
+
+  @ApiProperty({ example: 'John Doe' })
+  userName: string | null;
+
+  @ApiProperty({ example: 'Acme Corp' })
+  companyName: string | null;
+
+  @ApiProperty({ example: 'john@example.com' })
+  email: string | null;
+
+  @ApiProperty({ example: 500.0 })
+  subTotalAmount: number;
+
+  @ApiProperty({ example: 75.0 })
+  vatAmount: number;
+
+  @ApiProperty({ example: 15.0 })
+  vatPercentage: number;
+
+  @ApiProperty({ example: 575.0 })
+  totalAmount: number;
+
+  @ApiProperty({ example: 'unpaid' })
+  paymentStatus: string;
+
+  @ApiProperty({ example: 'stripe' })
+  paymentMethod: string;
+
+  @ApiProperty({ example: 0 })
+  status: number;
+}
+
 export class AppBookingCreateResponseDto {
   @ApiProperty({ example: true })
   success: boolean;
@@ -67,13 +102,6 @@ export class AppBookingCreateResponseDto {
   @ApiProperty({ example: 'Booking created successfully' })
   message: string;
 
-  @ApiProperty({
-    example: {
-      id: 'clx1booking...',
-      totalAmount: 575.0,
-      paymentStatus: 'unpaid',
-      paymentMethod: 'stripe',
-    },
-  })
-  data: any;
+  @ApiProperty({ type: AppBookingCreatedDataDto })
+  data: AppBookingCreatedDataDto;
 }
