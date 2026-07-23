@@ -10,7 +10,7 @@ import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UserRepository } from '../../../common/repository/user/user.repository';
 import appConfig from '../../../config/app.config';
-import { SojebStorage } from '../../../common/lib/Disk/SojebStorage';
+import { NajimStorage } from '../../../common/lib/Disk/NajimStorage';
 import { DateHelper } from '../../../common/helper/date.helper';
 import * as bcrypt from 'bcrypt';
 
@@ -160,9 +160,7 @@ export class UserService {
 
       let avatar_url: string | null = null;
       if (user.avatar) {
-        avatar_url = SojebStorage.url(
-          appConfig().storageUrl.avatar + user.avatar,
-        );
+        avatar_url = NajimStorage.url(user.avatar);
       }
 
       return {
@@ -219,11 +217,8 @@ export class UserService {
     if (statusVal === 0) statusText = 'Inactive';
     if (statusVal === 2) statusText = 'Banned';
 
-    let avatar_url: string | null = null;
     if (user.avatar) {
-      avatar_url = SojebStorage.url(
-        appConfig().storageUrl.avatar + user.avatar,
-      );
+      user.avatar = NajimStorage.url(user.avatar);
     }
 
     return {
@@ -234,7 +229,6 @@ export class UserService {
         status: statusVal,
         statusText,
         type: user.type ?? 'user',
-        avatar_url,
       },
     };
   }

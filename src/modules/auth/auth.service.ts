@@ -10,8 +10,7 @@ import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRepository } from '../../common/repository/user/user.repository';
 import { UpdateAuthDto } from './dto/update-auth.dto';
-import { SojebStorage } from '../../common/lib/Disk/SojebStorage';
-import { DateHelper } from '../../common/helper/date.helper';
+import { NajimStorage } from '../../common/lib/Disk/NajimStorage';
 import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
 import { StringHelper } from '../../common/helper/string.helper';
 
@@ -48,9 +47,10 @@ export class AuthService {
     }
 
     if (user.avatar) {
-      user['avatar_url'] = SojebStorage.url(
-        appConfig().storageUrl.avatar + user.avatar,
-      );
+      user['avatar'] = await NajimStorage.signedUrl(user.avatar, {
+        expiresIn: 60 * 60 * 24 * 7,
+        signed: true,
+      });
     }
 
     return {
@@ -93,19 +93,17 @@ export class AuthService {
         select: { avatar: true },
       });
       if (oldImage && oldImage.avatar) {
-        await SojebStorage.delete(
-          appConfig().storageUrl.avatar + oldImage.avatar,
-        );
+        await NajimStorage.delete(oldImage.avatar);
       }
 
       // upload file
-      const fileName = `${StringHelper.randomString()}${image.originalname}`;
-      await SojebStorage.put(
-        appConfig().storageUrl.avatar + fileName,
-        image.buffer,
+      const { fileKey } = NajimStorage.generateFileMeta(
+        image.originalname,
+        appConfig().storageUrl.avatar,
       );
+      await NajimStorage.put(fileKey, image.buffer);
 
-      data.avatar = fileName;
+      data.avatar = fileKey;
     }
 
     await this.prisma.user.update({

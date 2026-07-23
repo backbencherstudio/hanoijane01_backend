@@ -36,14 +36,20 @@ export class AppBookingItemDto {
 }
 
 export class AppBookingMetaDataDto {
+  @ApiProperty({ example: 100 })
+  totalItems: number;
+
   @ApiProperty({ example: 10 })
-  totalBookings: number;
+  itemCount: number;
+
+  @ApiProperty({ example: 10 })
+  itemsPerPage: number;
+
+  @ApiProperty({ example: 10 })
+  totalPages: number;
 
   @ApiProperty({ example: 1 })
-  page: number;
-
-  @ApiProperty({ example: 10 })
-  limit: number;
+  currentPage: number;
 }
 
 export class AppBookingListResponseDto {
@@ -70,8 +76,26 @@ export class AppBookingCreatedDataDto {
   @ApiProperty({ example: 'Acme Corp' })
   companyName: string | null;
 
+  @ApiProperty({ example: '123 Main St' })
+  companyAddress: string | null;
+
   @ApiProperty({ example: 'john@example.com' })
   email: string | null;
+
+  @ApiProperty({ example: '1234567890' })
+  phoneNumber: string | null;
+
+  @ApiProperty({ example: true })
+  termsAndConditionsAccepted: boolean;
+
+  @ApiProperty({ example: 'Acme Corp Ltd', nullable: true })
+  onBehalfOf: string | null;
+
+  @ApiProperty({ example: 'CEO', nullable: true })
+  title: string | null;
+
+  @ApiProperty({ example: 'signatures/sig_123.png', nullable: true })
+  signaturePath: string | null;
 
   @ApiProperty({ example: 500.0 })
   subTotalAmount: number;

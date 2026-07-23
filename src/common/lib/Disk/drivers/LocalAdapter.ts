@@ -49,9 +49,6 @@ export class LocalAdapter implements IStorage {
     try {
       const data = await fs.readFile(
         `${this._config.connection.rootUrl}/${key}`,
-        {
-          encoding: 'utf8',
-        },
       );
       return data;
     } catch (err) {

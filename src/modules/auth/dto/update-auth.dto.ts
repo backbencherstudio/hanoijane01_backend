@@ -1,26 +1,10 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
+import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import { CreateAuthDto } from './create-auth.dto';
 import { IsOptional, IsString } from 'class-validator';
 
-export class UpdateAuthDto extends PartialType(CreateAuthDto) {
-  @IsOptional()
-  @IsString()
-  @ApiProperty({
-    description: 'Phone number of the user',
-    example: '+91 9876543210',
-    required: false,
-  })
-  phoneNumber?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiProperty({
-    description: 'Company name',
-    example: 'Acme Corp',
-    required: false,
-  })
-  companyName?: string;
-
+export class UpdateAuthDto extends PartialType(
+  OmitType(CreateAuthDto, ['password', 'email'] as const),
+) {
   @IsOptional()
   @IsString()
   @ApiProperty({
@@ -29,4 +13,13 @@ export class UpdateAuthDto extends PartialType(CreateAuthDto) {
     required: false,
   })
   companyAddress?: string;
+
+  @IsOptional()
+  @ApiProperty({
+    description: 'Avatar of the user',
+    type: 'string',
+    format: 'binary',
+    required: false,
+  })
+  avatar?: Express.Multer.File;
 }

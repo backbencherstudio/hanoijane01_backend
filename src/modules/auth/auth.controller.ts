@@ -260,13 +260,13 @@ export class AuthController {
   })
   @UseGuards(AuthGuard)
   @Patch('update')
-  @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
+  @UseInterceptors(FileInterceptor('avatar', { storage: memoryStorage() }))
   async updateUser(
     @Session() session: UserSession,
     @Body() data: UpdateAuthDto,
-    @UploadedFile() image: Express.Multer.File,
+    @UploadedFile() avatar: Express.Multer.File,
   ) {
-    return this.authService.updateUser(session.user.id, data, image);
+    return this.authService.updateUser(session.user.id, data, avatar);
   }
 
   // Catch-all proxy for Better Auth endpoints

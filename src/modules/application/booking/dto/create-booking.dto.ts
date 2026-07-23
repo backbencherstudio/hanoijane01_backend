@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsBoolean,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateBookingDto {
   @ApiProperty({
@@ -17,6 +24,7 @@ export class CreateBookingDto {
   })
   @IsNotEmpty()
   userName: string;
+
   @ApiProperty({
     description: 'Company name',
     type: 'string',
@@ -24,6 +32,7 @@ export class CreateBookingDto {
   })
   @IsNotEmpty()
   companyName: string;
+
   @ApiProperty({
     description: 'Company address',
     type: 'string',
@@ -31,6 +40,7 @@ export class CreateBookingDto {
   })
   @IsNotEmpty()
   companyAddress: string;
+
   @ApiProperty({
     description: 'Email address',
     type: 'string',
@@ -39,6 +49,7 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @IsEmail()
   email: string;
+
   @ApiProperty({
     description: 'Phone number',
     type: 'string',
@@ -46,4 +57,42 @@ export class CreateBookingDto {
   })
   @IsNotEmpty()
   phoneNumber: string;
+
+  @ApiProperty({
+    description: 'Whether terms and conditions were accepted',
+    type: 'boolean',
+    example: true,
+  })
+  @IsNotEmpty()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  termsAndConditionsAccepted: boolean;
+
+  @ApiProperty({
+    description: 'Booking on behalf of (organization or person)',
+    type: 'string',
+    example: 'Acme Corp Ltd',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  onBehalfOf?: string;
+
+  @ApiProperty({
+    description: 'Title of the user booking',
+    type: 'string',
+    example: 'CEO',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @ApiProperty({
+    description: 'Signature image file',
+    type: 'string',
+    format: 'binary',
+  })
+  @IsNotEmpty()
+  signature: Express.Multer.File;
 }

@@ -265,6 +265,10 @@ export class BookingService {
       vatAmount: Number(booking.vatAmount),
       vatPercentage: Number(booking.vatPercentage),
       totalAmount: Number(booking.totalAmount),
+      termsAndConditionsAccepted: booking.termsAndConditionsAccepted,
+      onBehalfOf: booking.onBehalfOf || null,
+      title: booking.title || null,
+      signaturePath: booking.signaturePath || null,
     };
 
     return {

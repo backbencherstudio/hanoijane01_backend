@@ -1,6 +1,17 @@
-import { Controller, Get, Post, Body, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Query,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -32,19 +43,22 @@ export class BookingController {
   @ApiOperation({
     summary: 'Create a new stand booking',
     description:
-      'Reserves an available stand for the logged-in user and calculates subtotal, VAT, and total amounts.',
+      'Reserves an available stand for the logged-in user, uploads their signature file, and calculates subtotal, VAT, and total amounts.',
   })
+  @ApiConsumes('multipart/form-data')
   @ApiResponse({
     status: 201,
     type: AppBookingCreateResponseDto,
     description: 'Booking created successfully',
   })
   @Post()
+  @UseInterceptors(FileInterceptor('signature'))
   create(
     @Session() session: UserSession,
     @Body() createBookingDto: CreateBookingDto,
+    @UploadedFile() signature?: Express.Multer.File,
   ) {
-    return this.bookingService.create(session, createBookingDto);
+    return this.bookingService.create(session, createBookingDto, signature);
   }
 
   @ApiOperation({

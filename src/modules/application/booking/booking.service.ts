@@ -8,12 +8,18 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UserSession } from '../../auth/decorators/session.decorator';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { FindAllBookingsQueryDto } from './dto/query-booking.dto';
+import { NajimStorage } from '../../../common/lib/Disk/NajimStorage';
+import appConfig from 'src/config/app.config';
 
 @Injectable()
 export class BookingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(session: UserSession, createBookingDto: CreateBookingDto) {
+  async create(
+    session: UserSession,
+    createBookingDto: CreateBookingDto,
+    signature?: Express.Multer.File,
+  ) {
     const stand = await this.prisma.stand.findUnique({
       where: {
         id: createBookingDto.standId,
@@ -45,6 +51,16 @@ export class BookingService {
     const vatAmount = Number((subTotalAmount * (vatPct / 100)).toFixed(2));
     const totalAmount = Number((subTotalAmount + vatAmount).toFixed(2));
 
+    let signaturePathToSave: string | null = null;
+    if (signature) {
+      const meta = NajimStorage.generateFileMeta(
+        signature.originalname,
+        appConfig().storageUrl.booking,
+      );
+      await NajimStorage.put(meta.fileKey, signature.buffer);
+      signaturePathToSave = meta.fileKey;
+    }
+
     const booking = await this.prisma.booking.create({
       data: {
         userId: session.user.id,
@@ -54,6 +70,10 @@ export class BookingService {
         companyAddress: createBookingDto.companyAddress,
         email: createBookingDto.email,
         phoneNumber: createBookingDto.phoneNumber,
+        termsAndConditionsAccepted: createBookingDto.termsAndConditionsAccepted,
+        onBehalfOf: createBookingDto.onBehalfOf || null,
+        title: createBookingDto.title || null,
+        signaturePath: signaturePathToSave,
         subTotalAmount,
         vatAmount,
         vatPercentage: vatPct,
@@ -69,6 +89,10 @@ export class BookingService {
         companyAddress: true,
         email: true,
         phoneNumber: true,
+        termsAndConditionsAccepted: true,
+        onBehalfOf: true,
+        title: true,
+        signaturePath: true,
         subTotalAmount: true,
         vatAmount: true,
         vatPercentage: true,

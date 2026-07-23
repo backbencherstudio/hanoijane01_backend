@@ -275,11 +275,15 @@ model Booking {
   email          String?
   phoneNumber    String? @map("phone_number")
 
-  subTotalAmount Decimal @default(0.00) @map("sub_total_amount") @db.Decimal(12, 2)
-  discountAmount Decimal @default(0.00) @map("discount_amount") @db.Decimal(12, 2)
-  vatAmount      Decimal @default(0.00) @map("vat_amount") @db.Decimal(12, 2)
-  vatPercentage  Decimal @default(0.00) @map("vat_percentage") @db.Decimal(5, 2)
-  totalAmount    Decimal @default(0.00) @map("total_amount") @db.Decimal(12, 2)
+  subTotalAmount             Decimal @default(0.00) @map("sub_total_amount") @db.Decimal(12, 2)
+  discountAmount             Decimal @default(0.00) @map("discount_amount") @db.Decimal(12, 2)
+  vatAmount                  Decimal @default(0.00) @map("vat_amount") @db.Decimal(12, 2)
+  vatPercentage              Decimal @default(0.00) @map("vat_percentage") @db.Decimal(5, 2)
+  totalAmount                Decimal @default(0.00) @map("total_amount") @db.Decimal(12, 2)
+  termsAndConditionsAccepted Boolean @default(false) @map("terms_and_conditions_accepted")
+  onBehalfOf                 String? @map("on_behalf_of")
+  title                      String?
+  signaturePath              String? @map("signature_path")
 
   paymentStatus           String?   @default("unpaid") @map("payment_status") // unpaid, paid, failed, refunded
   paymentMethod           String?   @default("stripe") @map("payment_method")

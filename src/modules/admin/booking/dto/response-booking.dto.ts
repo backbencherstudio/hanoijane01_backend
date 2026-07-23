@@ -146,6 +146,18 @@ export class AdminBookingDetailDataDto {
 
   @ApiProperty({ example: 3450 })
   totalAmount: number;
+
+  @ApiProperty({ example: true })
+  termsAndConditionsAccepted: boolean;
+
+  @ApiProperty({ example: 'Acme Corp Ltd', nullable: true })
+  onBehalfOf: string | null;
+
+  @ApiProperty({ example: 'CEO', nullable: true })
+  title: string | null;
+
+  @ApiProperty({ example: 'signatures/sig_123.png', nullable: true })
+  signaturePath: string | null;
 }
 
 export class AdminBookingDetailResponseDto {

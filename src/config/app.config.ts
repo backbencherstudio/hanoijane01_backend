@@ -17,6 +17,7 @@ export default () => ({
     url: resolveEnvValue(process.env.APP_URL),
     client_app_url: resolveEnvValue(process.env.CLIENT_APP_URL),
     port: parseInt(process.env.PORT, 10) || 3000,
+    storageDriver: process.env.STORAGE_DRIVER || 'local',
   },
 
   fileSystems: {
@@ -96,7 +97,8 @@ export default () => ({
     package: '/package',
     destination: '/destination',
     blog: '/blog',
-    avatar: '/avatar',
+    avatar: 'avatar',
+    booking: 'booking',
     websiteInfo: '/website-info',
     // chat
     attachment: '/attachment',
