@@ -1,5 +1,5 @@
 import { Storage, Bucket } from '@google-cloud/storage';
-import { IStorage } from './iStorage';
+import { IStorage, SignedUrlOptions } from './iStorage';
 import { DiskOption } from '../Option';
 
 export class GCSAdapter implements IStorage {
@@ -28,6 +28,30 @@ export class GCSAdapter implements IStorage {
       return `${this._config.connection.gcpApiEndpoint}/${this._config.connection.gcpBucket}/${key}`;
     }
     return `https://storage.googleapis.com/${this._config.connection.gcpBucket}/${key}`;
+  }
+
+  /**
+   * Native GCS signed URL
+   */
+  async signedUrl(
+    key: string,
+    options: SignedUrlOptions = {},
+  ): Promise<string> {
+    const expiresIn = options.expiresIn ?? 60 * 60; // default 1 hour
+    const file = this.bucket.file(key);
+
+    const [url] = await file.getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + expiresIn * 1000,
+      ...(options.download
+        ? {
+            responseDisposition: `attachment; filename="${key.split('/').pop() || 'file'}"`,
+          }
+        : {}),
+    });
+
+    return url;
   }
 
   /**

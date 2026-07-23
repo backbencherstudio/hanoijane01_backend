@@ -7,7 +7,7 @@ export class CreateAuthDto {
     description: 'The name of the user',
     example: 'John Doe',
   })
-  name?: string;
+  name: string;
 
   @IsNotEmpty()
   @IsEmail()
@@ -15,7 +15,7 @@ export class CreateAuthDto {
     description: 'The email address of the user',
     example: 'user@example.com',
   })
-  email?: string;
+  email: string;
 
   @IsNotEmpty()
   @MinLength(8, { message: 'Password should be minimum 8 characters' })

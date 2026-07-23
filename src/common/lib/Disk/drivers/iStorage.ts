@@ -1,3 +1,9 @@
+export interface SignedUrlOptions {
+  expiresIn?: number;
+  signed?: boolean;
+  download?: boolean;
+}
+
 /**
  * IAdapter interface
  */
@@ -19,6 +25,13 @@ export interface IStorage {
    * @param key
    */
   url(key: string): string;
+
+  /**
+   * get temporary signed/presigned url
+   * @param key
+   * @param options
+   */
+  signedUrl(key: string, options?: SignedUrlOptions): Promise<string>;
 
   /**
    * put data

@@ -1,25 +1,54 @@
-import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
-import { CreateAuthDto } from './create-auth.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsOptional, IsString } from 'class-validator';
 
-export class UpdateAuthDto extends PartialType(
-  OmitType(CreateAuthDto, ['password', 'email'] as const),
-) {
+const EmptyToUndefined = () =>
+  Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  );
+
+export class UpdateAuthDto {
+  @EmptyToUndefined()
   @IsOptional()
   @IsString()
-  @ApiProperty({
+  @ApiPropertyOptional({
+    description: 'The name of the user',
+    example: 'John Doe',
+  })
+  name?: string;
+
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'The name of the company',
+    example: 'Acme Inc',
+  })
+  companyName?: string;
+
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'The phone number of the user',
+    example: '123456789',
+  })
+  phoneNumber?: string;
+
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
     description: 'Company address',
     example: '123 Business St, New York',
-    required: false,
   })
   companyAddress?: string;
 
   @IsOptional()
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Avatar of the user',
     type: 'string',
     format: 'binary',
-    required: false,
   })
   avatar?: Express.Multer.File;
 }

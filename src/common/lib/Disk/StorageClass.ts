@@ -1,4 +1,4 @@
-import { IStorage } from './drivers/iStorage';
+import { IStorage, SignedUrlOptions } from './drivers/iStorage';
 export class StorageClass {
   protected adapter: IStorage;
 
@@ -22,6 +22,16 @@ export class StorageClass {
    */
   public url(key: string) {
     return this.adapter.url(key);
+  }
+
+  /**
+   * get temporary signed/presigned url
+   * @param key
+   * @param options
+   * @returns
+   */
+  public async signedUrl(key: string, options: SignedUrlOptions = {}) {
+    return await this.adapter.signedUrl(key, options);
   }
 
   /**

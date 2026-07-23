@@ -1,44 +1,13 @@
 import * as path from 'path';
-import * as crypto from 'crypto';
 import { StorageClass } from './StorageClass';
 import { LocalAdapter } from './drivers/LocalAdapter';
 import { DiskOption, DiskType } from './Option';
 import { S3Adapter } from './drivers/S3Adapter';
-import { IStorage } from './drivers/iStorage';
+import { IStorage, SignedUrlOptions } from './drivers/iStorage';
 import { StringHelper } from '../../helper/string.helper';
+import { GCSAdapter } from './drivers/GCSAdapter';
 
-export interface UrlOptions {
-  expiresIn?: number;
-  signed?: boolean;
-  download?: boolean;
-}
-
-function buildProxyUrl(
-  key: string,
-  options: { expiresAt?: number; signed?: boolean; download?: boolean },
-): string {
-  const baseUrl = `${process.env.APP_URL || 'http://localhost:4000'}/api/storage/proxy`;
-  const params = new URLSearchParams();
-  params.append('key', key);
-
-  if (options.expiresAt) {
-    params.append('expiresAt', String(options.expiresAt));
-  }
-
-  if (options.download) {
-    params.append('download', 'true');
-  }
-
-  if (options.signed) {
-    const secret =
-      process.env.BETTER_AUTH_SECRET || 'better-auth-secret-1234567890';
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(`${key}:${options.expiresAt || ''}`);
-    params.append('signature', hmac.digest('hex'));
-  }
-
-  return `${baseUrl}?${params.toString()}`;
-}
+export type UrlOptions = SignedUrlOptions;
 
 /**
  * NajimStorage for handling storage (local storage, aws s3 storage)
@@ -92,7 +61,10 @@ export class NajimStorage {
   }
 
   /**
-   * get signed url or proxy url
+   * get signed url
+   * - s3/minio → native MinIO/S3 presigned URL
+   * - gcs → native GCS signed URL
+   * - local → app proxy signed URL
    * @param key
    * @param options
    * @returns
@@ -101,18 +73,13 @@ export class NajimStorage {
     key: string,
     options: UrlOptions = {},
   ): Promise<string> {
-    const { expiresIn, signed, download } = options;
-
-    // No options → direct URL
-    if (!expiresIn && !signed) {
+    // No options → direct public/object URL
+    if (!options.expiresIn && !options.signed) {
       return this.url(key);
     }
 
-    const expiresAt = expiresIn
-      ? Math.floor(Date.now() / 1000) + expiresIn
-      : undefined;
-
-    return buildProxyUrl(key, { expiresAt, signed, download });
+    const disk = this.storageDisk();
+    return disk.signedUrl(key, options);
   }
 
   /**
@@ -181,6 +148,10 @@ export class NajimStorage {
 
       case 's3':
         driverAdapter = new S3Adapter(config);
+        break;
+
+      case 'gcs':
+        driverAdapter = new GCSAdapter(config);
         break;
 
       default:

@@ -1,8 +1,9 @@
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { DiskOption } from '../Option';
-import { IStorage } from './iStorage';
+import { IStorage, SignedUrlOptions } from './iStorage';
 
 /**
  * LocalAdapter for local file storage
@@ -21,6 +22,41 @@ export class LocalAdapter implements IStorage {
    */
   url(key: string): string {
     return `${process.env.APP_URL}${this._config.connection.publicUrl}/${key}`;
+  }
+
+  /**
+   * Local files have no native signed URL support,
+   * so we generate an app proxy URL with HMAC signature.
+   */
+  async signedUrl(
+    key: string,
+    options: SignedUrlOptions = {},
+  ): Promise<string> {
+    const baseUrl = `${process.env.APP_URL || 'http://localhost:4000'}/api/storage/proxy`;
+    const params = new URLSearchParams();
+    params.append('key', key);
+
+    const expiresAt = options.expiresIn
+      ? Math.floor(Date.now() / 1000) + options.expiresIn
+      : undefined;
+
+    if (expiresAt) {
+      params.append('expiresAt', String(expiresAt));
+    }
+
+    if (options.download) {
+      params.append('download', 'true');
+    }
+
+    if (options.signed || expiresAt) {
+      const secret =
+        process.env.BETTER_AUTH_SECRET || 'better-auth-secret-1234567890';
+      const hmac = crypto.createHmac('sha256', secret);
+      hmac.update(`${key}:${expiresAt || ''}`);
+      params.append('signature', hmac.digest('hex'));
+    }
+
+    return `${baseUrl}?${params.toString()}`;
   }
 
   /**

@@ -1,6 +1,7 @@
 import * as AWS from 'aws-sdk';
-import { IStorage } from './iStorage';
+import { IStorage, SignedUrlOptions } from './iStorage';
 import { DiskOption } from '../Option';
+import { getMimeType } from '../mime';
 
 /**
  * S3Adapter for s3 bucket storage
@@ -22,6 +23,8 @@ export class S3Adapter implements IStorage {
     if (this._config.connection.minio) {
       // s3ForcePathStyle: true, // Required for MinIO
       awsConfig['s3ForcePathStyle'] = true;
+      // Keep signature host matching the MinIO endpoint
+      awsConfig['signatureVersion'] = 'v4';
     }
     this.s3 = new AWS.S3({
       ...awsConfig,
@@ -43,6 +46,36 @@ export class S3Adapter implements IStorage {
       return `${this._config.connection.awsEndpoint}/${this._config.connection.awsBucket}/${key}`;
     }
     return `https://${this._config.connection.awsBucket}.s3.${this._config.connection.awsDefaultRegion}.amazonaws.com/${key}`;
+  }
+
+  /**
+   * Native S3/MinIO presigned URL
+   * Example (MinIO):
+   * http://minio:9000/bucket/avatar/file.png?X-Amz-Algorithm=...&X-Amz-Signature=...
+   *
+   * Forces correct Content-Type + inline disposition so images/pdf open in browser
+   * instead of downloading (important when object was stored as octet-stream).
+   */
+  async signedUrl(
+    key: string,
+    options: SignedUrlOptions = {},
+  ): Promise<string> {
+    const expiresIn = options.expiresIn ?? 60 * 60; // default 1 hour
+    const contentType = getMimeType(key);
+    const filename = key.split('/').pop() || 'file';
+
+    const params: AWS.S3.GetObjectRequest & { Expires?: number } = {
+      Bucket: this._config.connection.awsBucket,
+      Key: key,
+      Expires: expiresIn,
+      // Override response headers so browser renders (not downloads)
+      ResponseContentType: contentType,
+      ResponseContentDisposition: options.download
+        ? `attachment; filename="${filename}"`
+        : `inline; filename="${filename}"`,
+    };
+
+    return this.s3.getSignedUrlPromise('getObject', params);
   }
 
   /**
@@ -91,6 +124,9 @@ export class S3Adapter implements IStorage {
         Bucket: this._config.connection.awsBucket,
         Key: key,
         Body: value,
+        // Without this MinIO stores application/octet-stream → browser downloads
+        ContentType: getMimeType(key),
+        ContentDisposition: 'inline',
       };
       const upload = await this.s3.upload(params).promise();
       return upload;
