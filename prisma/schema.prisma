@@ -77,19 +77,20 @@ model User {
   approvedAt      DateTime? @map("approved_at")
   emailVerifiedAt DateTime? @map("email_verified_at")
 
-  name           String?
-  email          String? @unique
-  companyName    String? @map("company_name") @db.VarChar(255)
-  password       String? @db.VarChar(255)
-  avatar         String?
-  phoneNumber    String? @map("phone_number")
-  companyAddress String? @map("company_address")
-  companyBio     String? @map("company_bio") @db.Text
-  websiteLink    String? @map("website_link")
-  billingId      String? @map("billing_id")
-  status         Int?    @default(1) @db.SmallInt
-  type           String? @default("user")
-  emailVerified  Boolean @default(false) @map("email_verified")
+  name               String?
+  email              String? @unique
+  companyName        String? @map("company_name") @db.VarChar(255)
+  password           String? @db.VarChar(255)
+  avatar             String?
+  phoneNumber        String? @map("phone_number")
+  companyPhoneNumber String? @map("company_phone_number")
+  companyAddress     String? @map("company_address")
+  companyBio         String? @map("company_bio") @db.Text
+  websiteLink        String? @map("website_link")
+  billingId          String? @map("billing_id")
+  status             Int?    @default(1) @db.SmallInt
+  type               String? @default("user")
+  emailVerified      Boolean @default(false) @map("email_verified")
 
   isTwoFactorEnabled Int?    @default(0) @map("is_two_factor_enabled")
   twoFactorSecret    String? @map("two_factor_secret")
@@ -104,7 +105,25 @@ model User {
   bookings            Booking[]
   contacts            Contact[]
 
+  attachments Attachment[]
+
   @@map("users")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  fileName String? @map("file_name")
+  filePath String  @map("file_path")
+  fileType String? @map("file_type")
+  mimeType String? @map("mime_type")
+  byteSize BigInt? @map("byte_size")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
 }
 
 model NotificationEvent {

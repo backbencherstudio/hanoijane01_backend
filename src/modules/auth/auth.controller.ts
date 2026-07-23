@@ -6,6 +6,7 @@ import {
   Logger,
   Patch,
   Post,
+  Put,
   Req,
   Res,
   UploadedFile,
@@ -29,8 +30,9 @@ import { toNodeHandler } from 'better-auth/node';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
+import { UploadAttachmentDto } from './dto/upload-attachment.dto';
 import {
-  LoginAuthDto,
+  SigninAuthDto,
   ForgotPasswordAuthDto,
   ResetPasswordAuthDto,
   VerifyEmailAuthDto,
@@ -38,9 +40,10 @@ import {
 } from './dto/query-auth.dto';
 import {
   ApiSuccessResponse,
-  LoginSuccessResponse,
+  SigninSuccessResponse,
   MeSuccessResponse,
   SignupSuccessResponse,
+  UploadAttachmentSuccessResponse,
 } from './dto/response-auth.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { Session, UserSession } from './decorators/session.decorator';
@@ -60,19 +63,19 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'Login with email and password',
+    summary: 'Signin with email and password',
     description:
       'Authenticates a user using email and password, returning session details, set-cookie headers, and an auth token.',
   })
-  @ApiBody({ type: LoginAuthDto })
+  @ApiBody({ type: SigninAuthDto })
   @ApiResponse({
     status: 200,
-    type: LoginSuccessResponse,
-    description: 'Login successful — returns session token and cookies',
+    type: SigninSuccessResponse,
+    description: 'Signin successful — returns session token and cookies',
   })
-  @Post('login')
-  async login(
-    @Body() body: LoginAuthDto,
+  @Post('signin')
+  async signin(
+    @Body() body: SigninAuthDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
@@ -185,7 +188,7 @@ export class AuthController {
   @ApiBody({ type: VerifyEmailAuthDto })
   @ApiResponse({
     status: 200,
-    type: LoginSuccessResponse,
+    type: SigninSuccessResponse,
     description: 'Email verified — returns session token',
   })
   @Post('verify-email')
@@ -267,6 +270,30 @@ export class AuthController {
     @UploadedFile() avatar: Express.Multer.File,
   ) {
     return this.authService.updateUser(session.user.id, data, avatar);
+  }
+
+  @ApiOperation({
+    summary: 'Upload or replace attachment',
+    description:
+      'Uploads a file for the authenticated user (PUT). Replaces existing file when `attachmentId` is sent. fileType options: logo, bio, insurance, safety, others.',
+  })
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UploadAttachmentDto })
+  @ApiResponse({
+    status: 200,
+    type: UploadAttachmentSuccessResponse,
+    description: 'File uploaded or replaced successfully',
+  })
+  @UseGuards(AuthGuard)
+  @Put('upload')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  async uploadAttachment(
+    @Session() session: UserSession,
+    @Body() data: UploadAttachmentDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.authService.uploadAttachment(session.user.id, data, file);
   }
 
   // Catch-all proxy for Better Auth endpoints

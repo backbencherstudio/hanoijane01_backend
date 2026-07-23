@@ -100,8 +100,8 @@ export default () => ({
     avatar: 'avatar',
     booking: 'booking',
     websiteInfo: '/website-info',
-    // chat
-    attachment: '/attachment',
+    // chat / user files
+    attachment: 'attachment',
   },
 
   defaultUser: {

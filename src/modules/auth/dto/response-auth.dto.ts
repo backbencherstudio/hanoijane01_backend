@@ -48,7 +48,7 @@ export class AuthUserDto {
   createdAt: Date;
 }
 
-export class LoginResponseData {
+export class SigninResponseData {
   @ApiProperty({ type: AuthUserDto })
   user: AuthUserDto;
 
@@ -59,12 +59,12 @@ export class LoginResponseData {
   token: string;
 }
 
-export class LoginSuccessResponse {
+export class SigninSuccessResponse {
   @ApiProperty({ example: true })
   success: boolean;
 
-  @ApiProperty({ type: LoginResponseData })
-  data: LoginResponseData;
+  @ApiProperty({ type: SigninResponseData })
+  data: SigninResponseData;
 }
 
 export class SignupResponseData {
@@ -125,4 +125,40 @@ export class MeSuccessResponse {
 
   @ApiProperty({ type: MeResponseData })
   data: MeResponseData;
+}
+
+// ─── Upload Attachment ───────────────────────────────────────────────────────
+
+export class UploadAttachmentResponseData {
+  @ApiProperty({ example: 'clx1abc...', description: 'Attachment ID' })
+  id: string;
+
+  @ApiProperty({ example: 'photo.jpg', nullable: true })
+  fileName: string | null;
+
+  @ApiProperty({ example: 'attachments/logo/abc123xyz.jpg' })
+  filePath: string;
+
+  @ApiProperty({ example: 'logo', nullable: true })
+  fileType: string | null;
+
+  @ApiProperty({ example: 1048576, description: 'File size in bytes', nullable: true })
+  byteSize: number | null;
+
+  @ApiProperty({ example: 'image/jpeg', nullable: true })
+  mimeType: string | null;
+
+  @ApiProperty({ example: 'https://example.com/attachments/logo/abc123xyz.jpg?token=...' })
+  fileUrl: string;
+}
+
+export class UploadAttachmentSuccessResponse {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ example: 'Attachment uploaded successfully' })
+  message: string;
+
+  @ApiProperty({ type: UploadAttachmentResponseData })
+  data: UploadAttachmentResponseData;
 }

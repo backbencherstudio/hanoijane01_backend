@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 
 //internal imports
@@ -10,9 +12,12 @@ import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRepository } from '../../common/repository/user/user.repository';
 import { UpdateAuthDto } from './dto/update-auth.dto';
+import {
+  AttachmentFileType,
+  UploadAttachmentDto,
+} from './dto/upload-attachment.dto';
 import { NajimStorage } from '../../common/lib/Disk/NajimStorage';
 import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
-import { StringHelper } from '../../common/helper/string.helper';
 
 @Injectable()
 export class AuthService {
@@ -21,9 +26,6 @@ export class AuthService {
     private userRepository: UserRepository,
   ) {}
 
-  /**
-   * Get user details by ID
-   */
   async me(userId: string) {
     const user = await this.prisma.user.findFirst({
       where: {
@@ -60,9 +62,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Update user details
-   */
   async updateUser(
     userId: string,
     updateUserDto: UpdateAuthDto,
@@ -83,8 +82,17 @@ export class AuthService {
     if (updateUserDto.companyName) {
       data.companyName = updateUserDto.companyName;
     }
+    if (updateUserDto.companyPhoneNumber) {
+      data.companyPhoneNumber = updateUserDto.companyPhoneNumber;
+    }
     if (updateUserDto.companyAddress) {
       data.companyAddress = updateUserDto.companyAddress;
+    }
+    if (updateUserDto.companyBio) {
+      data.companyBio = updateUserDto.companyBio;
+    }
+    if (updateUserDto.websiteLink) {
+      data.websiteLink = updateUserDto.websiteLink;
     }
     if (image) {
       // delete old image from storage
@@ -119,9 +127,95 @@ export class AuthService {
     };
   }
 
-  /**
-   * Update user details
-   */
+  async uploadAttachment(
+    userId: string,
+    dto: UploadAttachmentDto,
+    file?: Express.Multer.File,
+  ) {
+    const { attachmentId, fileType } = dto;
+
+    let attachment: Prisma.AttachmentCreateInput;
+
+    if (!file) throw new BadRequestException('File is required');
+
+    if (attachmentId) {
+      const oldAttachment = await this.prisma.attachment.findFirst({
+        where: {
+          id: attachmentId,
+        },
+        select: {
+          id: true,
+          filePath: true,
+          userId: true,
+        },
+      });
+      if (userId !== oldAttachment?.userId)
+        throw new UnauthorizedException(
+          'You are not authorized to perform this action',
+        );
+
+      try {
+        await NajimStorage.delete(oldAttachment.filePath);
+      } catch (error) {
+        console.error('Failed to delete old file', error.message);
+      }
+    }
+
+    const { fileKey, fileName } = NajimStorage.generateFileMeta(
+      file.originalname,
+      appConfig().storageUrl.attachment,
+    );
+    await NajimStorage.put(fileKey, file.buffer);
+
+    attachment = {
+      user: { connect: { id: userId } },
+      filePath: fileKey,
+      fileName: fileName,
+      fileType: fileType,
+      byteSize: file.size,
+      mimeType: file.mimetype,
+    };
+
+    try {
+      const createOrUpdateAttachment = await this.prisma.attachment.upsert({
+        where: {
+          id: attachmentId,
+        },
+        create: attachment,
+        update: attachment,
+        select: {
+          id: true,
+          fileName: true,
+          filePath: true,
+          fileType: true,
+          byteSize: true,
+          mimeType: true,
+        },
+      });
+
+      if (!createOrUpdateAttachment)
+        throw new InternalServerErrorException('Failed to Upload attachment');
+      return {
+        success: true,
+        message: 'Attachment uploaded successfully',
+        data: {
+          ...createOrUpdateAttachment,
+          fileUrl: await NajimStorage.signedUrl(
+            createOrUpdateAttachment.filePath,
+            {
+              expiresIn: 60 * 60 * 24 * 7,
+              signed: true,
+            },
+          ),
+        },
+      };
+    } catch (error) {
+      await NajimStorage.delete(fileKey);
+      console.error('Failed to upload attachment', error);
+      throw new InternalServerErrorException('Failed to Upload attachment');
+    }
+  }
+
   async changePassword({ user_id, oldPassword, newPassword }) {
     const user = await this.userRepository.getUserDetails(user_id);
     if (!user) {
@@ -147,9 +241,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Create Stripe customer for a new user (called as post-signup hook)
-   */
   async createStripeCustomer(userId: string) {
     try {
       const user = await this.prisma.user.findFirst({

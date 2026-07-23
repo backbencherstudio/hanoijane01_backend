@@ -39,11 +39,39 @@ export class UpdateAuthDto {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({
+    description: 'The phone number of the company',
+    example: '123456789',
+  })
+  companyPhoneNumber?: string;
+
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
     description: 'Company address',
     example: '123 Business St, New York',
   })
   companyAddress?: string;
 
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'Company bio',
+    example: 'John Doe',
+  })
+  companyBio?: string;
+
+  @EmptyToUndefined()
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({
+    description: 'Website link',
+    example: 'https://example.com',
+  })
+  websiteLink?: string;
+
+  @EmptyToUndefined()
   @IsOptional()
   @ApiPropertyOptional({
     description: 'Avatar of the user',
