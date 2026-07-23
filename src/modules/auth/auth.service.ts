@@ -12,10 +12,7 @@ import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRepository } from '../../common/repository/user/user.repository';
 import { UpdateAuthDto } from './dto/update-auth.dto';
-import {
-  AttachmentFileType,
-  UploadAttachmentDto,
-} from './dto/upload-attachment.dto';
+import { UploadAttachmentDto } from './dto/upload-attachment.dto';
 import { NajimStorage } from '../../common/lib/Disk/NajimStorage';
 import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
 
@@ -38,7 +35,20 @@ export class AuthService {
         avatar: true,
         phoneNumber: true,
         companyName: true,
+        companyPhoneNumber: true,
         companyAddress: true,
+        companyBio: true,
+        websiteLink: true,
+        attachments: {
+          select: {
+            id: true,
+            fileName: true,
+            filePath: true,
+            fileType: true,
+            byteSize: true,
+            mimeType: true,
+          },
+        },
         type: true,
         createdAt: true,
       },
@@ -55,6 +65,28 @@ export class AuthService {
       });
     }
 
+    if (user.attachments?.length > 0) {
+      user.attachments = await Promise.all(
+        user.attachments.map(async (attachment) => {
+          return {
+            ...attachment,
+            filePath: await NajimStorage.signedUrl(attachment.filePath, {
+              expiresIn: 60 * 60 * 24 * 7,
+              signed: true,
+            }),
+          };
+        }),
+      );
+    }
+
+    if (user.type !== 'user') {
+      delete user.companyAddress;
+      delete user.companyPhoneNumber;
+      delete user.companyName;
+      delete user.companyBio;
+      delete user.websiteLink;
+      delete user.attachments;
+    }
     return {
       success: true,
       message: 'User profile fetched successfully',
