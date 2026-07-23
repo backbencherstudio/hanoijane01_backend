@@ -10,57 +10,6 @@ import { UpdateLatestExhibitionDto } from './dto/update-exhibition.dto';
 @Injectable()
 export class ExhibitionService {
   constructor(private readonly prisma: PrismaService) {}
-
-  async findAll() {
-    const exhibitions = await this.prisma.exhibition.findMany({
-      include: {
-        halls: {
-          include: {
-            standCategories: {
-              include: {
-                stands: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return {
-      success: true,
-      message: 'Exhibitions retrieved successfully',
-      data: exhibitions,
-    };
-  }
-
-  async findOne(id: string) {
-    const exhibition = await this.prisma.exhibition.findUnique({
-      where: { id },
-      include: {
-        halls: {
-          include: {
-            standCategories: {
-              include: {
-                stands: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!exhibition) {
-      throw new NotFoundException(`Exhibition with ID ${id} not found`);
-    }
-
-    return {
-      success: true,
-      message: 'Exhibition details retrieved successfully',
-      data: exhibition,
-    };
-  }
-
   async updateLatestExhibition(dto: UpdateLatestExhibitionDto) {
     const latestExhibition = await this.prisma.exhibition.findFirst({
       where: { deletedAt: null },
@@ -77,7 +26,9 @@ export class ExhibitionService {
         title: dto.title,
         startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
         location: dto.location,
-        bookingEndedAt: dto.bookingEndedAt ? new Date(dto.bookingEndedAt) : undefined,
+        bookingEndedAt: dto.bookingEndedAt
+          ? new Date(dto.bookingEndedAt)
+          : undefined,
       },
     });
 
@@ -109,6 +60,8 @@ export class ExhibitionService {
             isAvailable: true,
             category: {
               select: {
+                slug: true,
+                title: true,
                 price: true,
                 priceInMinorUnit: true,
                 vatPercentage: true,
@@ -144,12 +97,16 @@ export class ExhibitionService {
           const totalPrice = Number(
             (basePrice + basePrice * (vatPct / 100)).toFixed(2),
           );
+          const categoryTitle = category?.title ?? '';
+          const categorySlug = category?.slug ?? '';
           return {
             ...stand,
             size: category?.size ?? '',
             price: basePrice,
             vatPercentage: vatPct,
             totalPrice,
+            categoryTitle,
+            categorySlug,
           };
         }),
       },

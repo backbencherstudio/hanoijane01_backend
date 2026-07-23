@@ -1,4 +1,12 @@
-import { Controller, Get, Param, UseGuards, Query, Patch, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  Query,
+  Patch,
+  Body,
+} from '@nestjs/common';
 import {
   ApiOperation,
   ApiResponse,
@@ -12,13 +20,17 @@ import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { Roles } from '../../../common/guard/role/roles.decorator';
 import { Role } from '../../../common/guard/role/role.enum';
 import {
-  AdminExhibitionDetailResponseDto,
-  AdminExhibitionListResponseDto,
   AdminExhibitionLatestResponseDto,
   AdminExhibitionActionResponseDto,
 } from './dto/response-exhibition.dto';
-import { GetExhibitionStatsQueryDto, GetStandsQueryDto } from './dto/query-stand.dto';
-import { HallStatsResponseDto, StandListResponseDto } from './dto/response-stand.dto';
+import {
+  GetExhibitionStatsQueryDto,
+  GetStandsQueryDto,
+} from './dto/query-stand.dto';
+import {
+  HallStatsResponseDto,
+  StandListResponseDto,
+} from './dto/response-stand.dto';
 import { UpdateLatestExhibitionDto } from './dto/update-exhibition.dto';
 
 @ApiTags('Admin / Exhibition')
@@ -28,21 +40,6 @@ import { UpdateLatestExhibitionDto } from './dto/update-exhibition.dto';
 @Controller('admin/exhibition')
 export class ExhibitionController {
   constructor(private readonly exhibitionService: ExhibitionService) {}
-
-  @ApiOperation({
-    summary: 'Get all exhibitions (Admin)',
-    description:
-      'Retrieves a list of all exhibitions along with nested halls, stand categories, and stands for administrative management.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: AdminExhibitionListResponseDto,
-    description: 'List of exhibitions retrieved successfully',
-  })
-  @Get()
-  findAll() {
-    return this.exhibitionService.findAll();
-  }
 
   @ApiOperation({
     summary: 'Get latest exhibition without halls (Admin)',
@@ -61,7 +58,8 @@ export class ExhibitionController {
 
   @ApiOperation({
     summary: 'Update latest exhibition details (Admin)',
-    description: 'Updates the metadata (Event name, date, venue, deadline) of the latest active exhibition.',
+    description:
+      'Updates the metadata (Event name, date, venue, deadline) of the latest active exhibition.',
   })
   @ApiResponse({
     status: 200,
@@ -75,7 +73,8 @@ export class ExhibitionController {
 
   @ApiOperation({
     summary: 'Get stand stats grouped by hall (Admin)',
-    description: 'Retrieves count statistics of total, booked, and available stands for each hall.',
+    description:
+      'Retrieves count statistics of total, booked, and available stands for each hall.',
   })
   @ApiResponse({
     status: 200,
@@ -89,7 +88,8 @@ export class ExhibitionController {
 
   @ApiOperation({
     summary: 'Get paginated stands list with filters (Admin)',
-    description: 'Retrieves a list of stands with parameters for search, pagination, hall, category, and booking status.',
+    description:
+      'Retrieves a list of stands with parameters for search, pagination, hall, category, and booking status.',
   })
   @ApiResponse({
     status: 200,
@@ -99,26 +99,5 @@ export class ExhibitionController {
   @Get('stands')
   getStandsList(@Query() query: GetStandsQueryDto) {
     return this.exhibitionService.getStandsList(query);
-  }
-
-  @ApiOperation({
-    summary: 'Get exhibition by ID (Admin)',
-    description:
-      'Retrieves detailed information of a specific exhibition including all nested halls, stand categories, and stands.',
-  })
-  @ApiParam({
-    name: 'id',
-    type: String,
-    required: true,
-    description: 'The unique ID of the exhibition record to retrieve',
-  })
-  @ApiResponse({
-    status: 200,
-    type: AdminExhibitionDetailResponseDto,
-    description: 'Exhibition details retrieved successfully',
-  })
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.exhibitionService.findOne(id);
   }
 }

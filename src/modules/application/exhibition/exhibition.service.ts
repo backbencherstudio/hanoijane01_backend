@@ -32,6 +32,7 @@ export class ExhibitionService {
                   select: {
                     id: true,
                     standNumber: true,
+                    title: true,
                   },
                 },
                 _count: {
@@ -51,6 +52,8 @@ export class ExhibitionService {
             isAvailable: true,
             category: {
               select: {
+                slug: true,
+                title: true,
                 price: true,
                 priceInMinorUnit: true,
                 vatPercentage: true,
@@ -96,6 +99,7 @@ export class ExhibitionService {
                 price: basePrice,
                 vatPercentage: vatPct,
                 totalPrice,
+                stands,
                 totalStands: _count.stands ?? 0,
               };
             },
@@ -107,12 +111,16 @@ export class ExhibitionService {
           const totalPrice = Number(
             (basePrice + basePrice * (vatPct / 100)).toFixed(2),
           );
+          const categoryTitle = category?.title ?? '';
+          const categorySlug = category?.slug ?? '';
           return {
             ...stand,
             size: category?.size ?? '',
             price: basePrice,
             vatPercentage: vatPct,
             totalPrice,
+            categoryTitle,
+            categorySlug,
           };
         }),
       },
