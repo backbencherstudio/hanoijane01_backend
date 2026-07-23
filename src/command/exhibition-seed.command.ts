@@ -2,7 +2,12 @@ import { Command, CommandRunner } from 'nest-commander';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-function generateStandRange(prefix: string, start: number, end: number, description: string) {
+function generateStandRange(
+  prefix: string,
+  start: number,
+  end: number,
+  description: string,
+) {
   const stands = [];
   for (let i = start; i <= end; i++) {
     const numStr = `${prefix}${i}`;
@@ -47,7 +52,8 @@ export const exhibitionSeedStructure = {
             {
               standNumber: '8',
               title: 'Stand 8',
-              description: 'Spacious premium rectangular booth (6m x 2m) near main lounge area in Goffs Complex.',
+              description:
+                'Spacious premium rectangular booth (6m x 2m) near main lounge area in Goffs Complex.',
             },
           ],
         },
@@ -62,7 +68,8 @@ export const exhibitionSeedStructure = {
             {
               standNumber: '11',
               title: 'Stand 11',
-              description: 'Premium front-row rectangular exhibition booth (4m x 2m) with maximum brand visibility.',
+              description:
+                'Premium front-row rectangular exhibition booth (4m x 2m) with maximum brand visibility.',
             },
           ],
         },
@@ -77,7 +84,8 @@ export const exhibitionSeedStructure = {
             {
               standNumber: '17',
               title: 'Stand 17',
-              description: 'Exclusive corner premium booth (4m x 3.5m) offering high dual-side visitor exposure.',
+              description:
+                'Exclusive corner premium booth (4m x 3.5m) offering high dual-side visitor exposure.',
             },
           ],
         },
@@ -92,7 +100,8 @@ export const exhibitionSeedStructure = {
             {
               standNumber: '9',
               title: 'Stand 9',
-              description: 'Compact exhibition booth (2.5m x 1.5m) ideal for startups and targeted product showcases.',
+              description:
+                'Compact exhibition booth (2.5m x 1.5m) ideal for startups and targeted product showcases.',
             },
           ],
         },
@@ -116,11 +125,27 @@ export const exhibitionSeedStructure = {
             {
               standNumber: 'M1',
               title: 'Stand M1',
-              description: 'Standard marquee booth (3m x 2m) located right at the entrance of Goffs Auditorium hall.',
+              description:
+                'Standard marquee booth (3m x 2m) located right at the entrance of Goffs Auditorium hall.',
             },
-            ...generateStandRange('M', 3, 26, 'Standard indoor marquee booth (3m x 2m) positioned along the main exhibition corridor'),
-            ...generateStandRange('M', 28, 49, 'Standard indoor marquee booth (3m x 2m) situated in central aisle for steady attendee traffic'),
-            ...generateStandRange('M', 52, 71, 'Standard indoor marquee booth (3m x 2m) located along main hall corridor'),
+            ...generateStandRange(
+              'M',
+              3,
+              26,
+              'Standard indoor marquee booth (3m x 2m) positioned along the main exhibition corridor',
+            ),
+            ...generateStandRange(
+              'M',
+              28,
+              49,
+              'Standard indoor marquee booth (3m x 2m) situated in central aisle for steady attendee traffic',
+            ),
+            ...generateStandRange(
+              'M',
+              52,
+              71,
+              'Standard indoor marquee booth (3m x 2m) located along main hall corridor',
+            ),
           ],
         },
         {
@@ -134,7 +159,8 @@ export const exhibitionSeedStructure = {
             {
               standNumber: 'M2',
               title: 'Stand M2',
-              description: 'Top-tier corner premium booth (3m x 3m) positioned at the main entrance junction of Marquee.',
+              description:
+                'Top-tier corner premium booth (3m x 3m) positioned at the main entrance junction of Marquee.',
             },
           ],
         },
@@ -149,7 +175,8 @@ export const exhibitionSeedStructure = {
             {
               standNumber: 'M50',
               title: 'Stand M50',
-              description: 'Premium square exhibition booth (3m x 4m) with large footprint for immersive product displays.',
+              description:
+                'Premium square exhibition booth (3m x 4m) with large footprint for immersive product displays.',
             },
           ],
         },
@@ -164,7 +191,8 @@ export const exhibitionSeedStructure = {
             {
               standNumber: 'M51',
               title: 'Stand M51',
-              description: 'Wide rectangular premium booth (5m x 2m) offering prominent front-line visitor presentation.',
+              description:
+                'Wide rectangular premium booth (5m x 2m) offering prominent front-line visitor presentation.',
             },
           ],
         },
@@ -179,12 +207,14 @@ export const exhibitionSeedStructure = {
             {
               standNumber: 'M27',
               title: 'Stand M27',
-              description: 'Corner premium booth (4m x 3m) located at the south exit corner of Marquee hall.',
+              description:
+                'Corner premium booth (4m x 3m) located at the south exit corner of Marquee hall.',
             },
             {
               standNumber: 'M72',
               title: 'Stand M72',
-              description: 'Corner premium booth (4m x 3m) situated at the south entrance junction of Marquee hall.',
+              description:
+                'Corner premium booth (4m x 3m) situated at the south entrance junction of Marquee hall.',
             },
           ],
         },
@@ -208,27 +238,32 @@ export const exhibitionSeedStructure = {
             {
               standNumber: 'O1',
               title: 'Outdoor Stand 1',
-              description: 'Large outdoor exhibition space (10m x 5m) suited for machinery, vehicles, and open-air displays.',
+              description:
+                'Large outdoor exhibition space (10m x 5m) suited for machinery, vehicles, and open-air displays.',
             },
             {
               standNumber: 'O2',
               title: 'Outdoor Stand 2',
-              description: 'Large outdoor exhibition plot (10m x 5m) with high visibility from the venue entrance.',
+              description:
+                'Large outdoor exhibition plot (10m x 5m) with high visibility from the venue entrance.',
             },
             {
               standNumber: 'O3',
               title: 'Outdoor Stand 3',
-              description: 'Outdoor exhibition area (10m x 5m) ideal for heavy equipment and interactive outdoor setups.',
+              description:
+                'Outdoor exhibition area (10m x 5m) ideal for heavy equipment and interactive outdoor setups.',
             },
             {
               standNumber: 'O4',
               title: 'Outdoor Stand 4',
-              description: 'Outdoor exhibition plot (10m x 5m) offering flexible space for custom structure installation.',
+              description:
+                'Outdoor exhibition plot (10m x 5m) offering flexible space for custom structure installation.',
             },
             {
               standNumber: 'O5',
               title: 'Outdoor Stand 5',
-              description: 'Spacious outdoor plot (10m x 5m) near main venue walkways for open-air visitor engagement.',
+              description:
+                'Spacious outdoor plot (10m x 5m) near main venue walkways for open-air visitor engagement.',
             },
           ],
         },
@@ -241,7 +276,8 @@ export const exhibitionSeedStructure = {
 @Command({
   name: 'seed-exhibition',
   aliases: ['exhibition-seed'],
-  description: 'Seed or update the latest exhibition with halls, categories, and stands',
+  description:
+    'Seed or update the latest exhibition with halls, categories, and stands',
 })
 export class ExhibitionSeedCommand extends CommandRunner {
   constructor(private readonly prisma: PrismaService) {

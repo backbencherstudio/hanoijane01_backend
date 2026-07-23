@@ -2,8 +2,8 @@ function resolveEnvValue(value: string | undefined): string | undefined {
   if (!value) return value;
   let resolved = value;
   resolved = resolved.replace(/\${PORT}/g, process.env.PORT || '3000');
-  const appUrl = process.env.APP_URL 
-    ? process.env.APP_URL.replace(/\${PORT}/g, process.env.PORT || '3000') 
+  const appUrl = process.env.APP_URL
+    ? process.env.APP_URL.replace(/\${PORT}/g, process.env.PORT || '3000')
     : 'http://localhost:3000';
   resolved = resolved.replace(/\${APP_URL}/g, appUrl);
   resolved = resolved.replace(/\${APP_NAME}/g, process.env.APP_NAME || '');

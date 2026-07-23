@@ -47,6 +47,7 @@ export class TransactionService {
         },
       }),
     ]);
+    const totalPages = Math.ceil(total / limit);
     return {
       success: true,
       message: 'Transactions fetched successfully',
@@ -63,6 +64,13 @@ export class TransactionService {
         standNumber: t.booking?.stand?.standNumber,
         standSlug: null,
       })),
+      meta_data: {
+        totalItems: total,
+        itemCount: transactions.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page,
+      },
     };
   }
 }

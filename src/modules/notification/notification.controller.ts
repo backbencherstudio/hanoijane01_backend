@@ -46,7 +46,7 @@ export class NotificationController {
     description: 'Deletes a specific notification identified by its ID.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'notificationId',
     type: String,
     required: true,
     description: 'The unique ID of the notification record to delete.',
@@ -56,10 +56,13 @@ export class NotificationController {
     type: NotificationActionResponse,
     description: 'Notification deleted successfully',
   })
-  @Delete(':id')
-  async remove(@Req() req: Request, @Param('id') id: string) {
+  @Delete(':notificationId')
+  async remove(
+    @Req() req: Request,
+    @Param('notificationId') notificationId: string,
+  ) {
     const user_id = req.user.id;
-    return this.notificationService.remove(id, user_id);
+    return this.notificationService.remove(notificationId, user_id);
   }
 
   @ApiOperation({

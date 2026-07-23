@@ -80,7 +80,7 @@ export class TransactionController {
       'Queries Stripe for the payment status of a specific booking ID and updates the database, stall reservation, and transaction records.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'bookingId',
     type: String,
     required: true,
     description: 'The unique ID of the booking record to sync against Stripe.',
@@ -90,9 +90,9 @@ export class TransactionController {
     type: PaymentTransactionActionResponse,
     description: 'Booking payment status synced successfully',
   })
-  @Post('sync-booking/:id')
-  async syncBooking(@Param('id') id: string) {
-    const result = await this.stripeService.syncBookingById(id);
+  @Post('sync-booking/:bookingId')
+  async syncBooking(@Param('bookingId') bookingId: string) {
+    const result = await this.stripeService.syncBookingById(bookingId);
     return {
       success: true,
       message: 'Booking payment status synced with Stripe successfully',
@@ -106,21 +106,23 @@ export class TransactionController {
       'Fetches the full details of a specific payment transaction identified by its ID.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'transactionId',
     type: String,
     required: true,
-    description:
-      'The unique ID of the payment transaction record to retrieve.',
+    description: 'The unique ID of the payment transaction record to retrieve.',
   })
   @ApiResponse({
     status: 200,
     type: PaymentTransactionDetailResponse,
     description: 'Transaction details',
   })
-  @Get(':id')
-  async findOne(@Req() req: Request, @Param('id') id: string) {
+  @Get(':transactionId')
+  async findOne(
+    @Req() req: Request,
+    @Param('transactionId') transactionId: string,
+  ) {
     const user_id = req.user.id;
-    return this.transactionService.findOne(id, user_id);
+    return this.transactionService.findOne(transactionId, user_id);
   }
 
   @ApiOperation({
@@ -129,20 +131,22 @@ export class TransactionController {
       'Permanently deletes the payment transaction record identified by its ID from the database.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'transactionId',
     type: String,
     required: true,
-    description:
-      'The unique ID of the payment transaction record to delete.',
+    description: 'The unique ID of the payment transaction record to delete.',
   })
   @ApiResponse({
     status: 200,
     type: PaymentTransactionActionResponse,
     description: 'Transaction deleted successfully',
   })
-  @Delete(':id')
-  async remove(@Req() req: Request, @Param('id') id: string) {
+  @Delete(':transactionId')
+  async remove(
+    @Req() req: Request,
+    @Param('transactionId') transactionId: string,
+  ) {
     const user_id = req.user.id;
-    return this.transactionService.remove(id, user_id);
+    return this.transactionService.remove(transactionId, user_id);
   }
 }

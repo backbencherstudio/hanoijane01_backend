@@ -5,4 +5,3 @@ describe('HasPlanGuard', () => {
     expect(new HasPlanGuard({} as any)).toBeDefined();
   });
 });
-

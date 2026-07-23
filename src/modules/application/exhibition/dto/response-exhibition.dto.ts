@@ -82,8 +82,11 @@ export class AppStandItemDto {
   @ApiProperty({ example: '12' })
   standNumber: string;
 
-  @ApiProperty({ example: 1, description: '1 = available, 0 = booked' })
-  isAvailable: number;
+  @ApiProperty({
+    example: true,
+    description: 'true = available, false = booked',
+  })
+  isAvailable: boolean;
 
   @ApiProperty({ example: '3m x 2m' })
   size: string;
@@ -158,8 +161,11 @@ export class AppStandDetailDataDto {
   @ApiProperty({ example: 'Stand 12' })
   title: string;
 
-  @ApiProperty({ example: 1, description: '1 = available, 0 = booked' })
-  isAvailable: number;
+  @ApiProperty({
+    example: true,
+    description: 'true = available, false = booked',
+  })
+  isAvailable: boolean;
 
   @ApiProperty({ example: 'Gold Category', nullable: true })
   category: string | null;

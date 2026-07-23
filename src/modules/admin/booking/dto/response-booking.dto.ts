@@ -126,7 +126,10 @@ export class AdminBookingDetailDataDto {
   @ApiProperty({ example: '2026-03-16T00:00:00.000Z' })
   bookingDate: Date;
 
-  @ApiProperty({ example: 'paid', description: 'paid | unpaid | failed | refunded' })
+  @ApiProperty({
+    example: 'paid',
+    description: 'paid | unpaid | failed | refunded',
+  })
   paymentStatus: string;
 
   @ApiProperty({ example: 3000 })

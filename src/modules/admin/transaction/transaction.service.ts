@@ -37,6 +37,7 @@ export class TransactionService {
 
     return {
       success: true,
+      message: 'Payment transactions retrieved successfully',
       data: paymentTransactions,
     };
   }
@@ -73,6 +74,7 @@ export class TransactionService {
 
     return {
       success: true,
+      message: 'Payment transaction details retrieved successfully',
       data: paymentTransaction,
     };
   }

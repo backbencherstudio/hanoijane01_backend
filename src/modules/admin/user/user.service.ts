@@ -178,12 +178,14 @@ export class UserService {
 
     return {
       success: true,
+      message: 'Users retrieved successfully',
       data: formattedUsers,
       meta_data: {
-        total,
-        page,
-        limit,
+        totalItems: total,
+        itemCount: formattedUsers.length,
+        itemsPerPage: limit,
         totalPages,
+        currentPage: page,
       },
     };
   }
@@ -226,6 +228,7 @@ export class UserService {
 
     return {
       success: true,
+      message: 'User details retrieved successfully',
       data: {
         ...user,
         status: statusVal,

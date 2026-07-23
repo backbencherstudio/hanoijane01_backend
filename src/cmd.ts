@@ -25,7 +25,10 @@ export class AppModule {}
 
 async function bootstrap() {
   // If invoked via ts-node, adjust process.argv so nest-commander correctly resolves subcommands
-  if (process.argv[2] && (process.argv[2].endsWith('cmd.ts') || process.argv[2].endsWith('cmd.js'))) {
+  if (
+    process.argv[2] &&
+    (process.argv[2].endsWith('cmd.ts') || process.argv[2].endsWith('cmd.js'))
+  ) {
     process.argv.splice(1, 1);
   }
 
@@ -38,5 +41,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-
-

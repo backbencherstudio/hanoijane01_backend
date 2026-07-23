@@ -15,6 +15,7 @@ import { UpdateUserAdminDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import {
   ApiBearerAuth,
+  ApiExcludeEndpoint,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -84,13 +85,14 @@ export class UserController {
     return this.userService.findAll(query);
   }
 
+  @ApiExcludeEndpoint()
   @ApiOperation({
     summary: 'Approve a user',
     description:
       "Sets the user's approval date to the current time, granting them full access as a verified user.",
   })
   @ApiParam({
-    name: 'id',
+    name: 'userId',
     type: String,
     required: true,
     description: 'The unique ID of the user record to approve.',
@@ -100,18 +102,19 @@ export class UserController {
     type: AdminUserActionResponse,
     description: 'User approved successfully',
   })
-  @Post(':id/approve')
-  async approve(@Param('id') id: string) {
-    return this.userService.approve(id);
+  @Post(':userId/approve')
+  async approve(@Param('userId') userId: string) {
+    return this.userService.approve(userId);
   }
 
+  @ApiExcludeEndpoint()
   @ApiOperation({
     summary: 'Reject/Unapprove a user',
     description:
       "Clears the user's approval timestamp (sets approvedAt to null), blocking or unapproving their access.",
   })
   @ApiParam({
-    name: 'id',
+    name: 'userId',
     type: String,
     required: true,
     description: 'The unique ID of the user record to reject or unapprove.',
@@ -121,9 +124,9 @@ export class UserController {
     type: AdminUserActionResponse,
     description: 'User rejected successfully',
   })
-  @Post(':id/reject')
-  async reject(@Param('id') id: string) {
-    return this.userService.reject(id);
+  @Post(':userId/reject')
+  async reject(@Param('userId') userId: string) {
+    return this.userService.reject(userId);
   }
 
   @ApiOperation({
@@ -132,7 +135,7 @@ export class UserController {
       'Fetches the detailed user profile including type, status, company and billing information by their ID.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'userId',
     type: String,
     required: true,
     description: 'The unique ID of the user record to retrieve.',
@@ -142,9 +145,9 @@ export class UserController {
     type: AdminUserDetailResponse,
     description: 'User profile details',
   })
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
+  @Get(':userId')
+  async findOne(@Param('userId') userId: string) {
+    return this.userService.findOne(userId);
   }
 
   @ApiOperation({
@@ -153,7 +156,7 @@ export class UserController {
       'Updates the fields of the user record identified by their ID.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'userId',
     type: String,
     required: true,
     description: 'The unique ID of the user record to update.',
@@ -163,12 +166,12 @@ export class UserController {
     type: AdminUserActionResponse,
     description: 'User updated successfully',
   })
-  @Patch(':id')
+  @Patch(':userId')
   async update(
-    @Param('id') id: string,
+    @Param('userId') userId: string,
     @Body() updateUserDto: UpdateUserAdminDto,
   ) {
-    return this.userService.update(id, updateUserDto);
+    return this.userService.update(userId, updateUserDto);
   }
 
   @ApiOperation({
@@ -177,7 +180,7 @@ export class UserController {
       'Permanently deletes the user record identified by their ID from the database.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'userId',
     type: String,
     required: true,
     description: 'The unique ID of the user record to delete.',
@@ -187,8 +190,8 @@ export class UserController {
     type: AdminUserActionResponse,
     description: 'User deleted successfully',
   })
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  @Delete(':userId')
+  async remove(@Param('userId') userId: string) {
+    return this.userService.remove(userId);
   }
 }

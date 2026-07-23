@@ -38,10 +38,18 @@ export class StandBookedByDto {
   @ApiProperty({ example: 'Acme Corp Inc.', nullable: true })
   companyName: string | null;
 
-  @ApiProperty({ example: 1, description: 'User status (1 = Active, 0 = Inactive, 2 = Banned)', nullable: true })
+  @ApiProperty({
+    example: 1,
+    description: 'User status (1 = Active, 0 = Inactive, 2 = Banned)',
+    nullable: true,
+  })
   status: number | null;
 
-  @ApiProperty({ example: 'Active', description: 'User status text representation', nullable: true })
+  @ApiProperty({
+    example: 'Active',
+    description: 'User status text representation',
+    nullable: true,
+  })
   statusText: string | null;
 }
 

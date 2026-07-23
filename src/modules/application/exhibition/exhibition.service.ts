@@ -115,6 +115,7 @@ export class ExhibitionService {
           const categorySlug = category?.slug ?? '';
           return {
             ...stand,
+            isAvailable: stand.isAvailable ? true : false,
             size: category?.size ?? '',
             price: basePrice,
             vatPercentage: vatPct,
@@ -181,6 +182,7 @@ export class ExhibitionService {
       success: true,
       data: {
         ...rest,
+        isAvailable: rest.isAvailable ? true : false,
         category: restCategory.title ?? null,
         price: basePrice,
         vatPercentage: vatPct,

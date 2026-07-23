@@ -200,15 +200,13 @@ export class BookingService {
     return {
       success: true,
       message: 'Bookings fetched successfully',
-      data: {
-        items,
-        meta: {
-          totalItems,
-          itemCount: items.length,
-          itemsPerPage: limit,
-          totalPages,
-          currentPage: page,
-        },
+      data: items,
+      meta_data: {
+        totalItems,
+        itemCount: items.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page,
       },
     };
   }

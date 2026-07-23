@@ -22,7 +22,8 @@ export class GetStandsQueryDto {
   exhibitionId?: string;
 
   @ApiPropertyOptional({
-    description: 'Search keyword for stand number, stand title, or exhibitor details',
+    description:
+      'Search keyword for stand number, stand title, or exhibitor details',
     example: 'BK-1042',
   })
   @IsOptional()

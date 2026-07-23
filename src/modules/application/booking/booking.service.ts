@@ -181,8 +181,13 @@ export class BookingService {
           },
         },
       }),
-      this.prisma.booking.count(),
+      this.prisma.booking.count({
+        where: {
+          userId: session.user.id,
+        },
+      }),
     ]);
+    const totalPages = Math.ceil(totalBookings / limit);
     return {
       success: true,
       message: 'Bookings retrieved successfully',
@@ -200,9 +205,11 @@ export class BookingService {
         };
       }),
       meta_data: {
-        totalBookings,
-        page,
-        limit,
+        totalItems: totalBookings,
+        itemCount: bookings.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page,
       },
     };
   }

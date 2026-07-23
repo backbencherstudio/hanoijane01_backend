@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -75,7 +65,7 @@ export class BookingController {
       'Retrieves detailed booking information including user, stand, and transaction details.',
   })
   @ApiParam({
-    name: 'id',
+    name: 'bookingId',
     type: String,
     required: true,
     description: 'The unique ID of the booking record',
@@ -85,8 +75,8 @@ export class BookingController {
     type: AdminBookingDetailResponseDto,
     description: 'Booking details retrieved successfully',
   })
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.bookingService.findOne(id);
+  @Get(':bookingId')
+  findOne(@Param('bookingId') bookingId: string) {
+    return this.bookingService.findOne(bookingId);
   }
 }

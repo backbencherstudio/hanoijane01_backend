@@ -16,7 +16,8 @@ export class GetBookingsQueryDto {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({
-    description: 'Search keyword to filter bookings by exhibitor name, email, company, or stand number',
+    description:
+      'Search keyword to filter bookings by exhibitor name, email, company, or stand number',
     example: 'Acme',
   })
   search?: string;
@@ -49,6 +50,10 @@ export class GetBookingsQueryDto {
   @Transform(({ value }) => parseInt(value, 10))
   @IsInt()
   @Min(1)
-  @ApiPropertyOptional({ description: 'Items per page', default: 10, example: 10 })
+  @ApiPropertyOptional({
+    description: 'Items per page',
+    default: 10,
+    example: 10,
+  })
   limit?: number = 10;
 }

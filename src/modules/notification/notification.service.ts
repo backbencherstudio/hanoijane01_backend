@@ -81,6 +81,7 @@ export class NotificationService {
 
     return {
       success: true,
+      message: 'Notifications retrieved successfully',
       data: notifications,
     };
   }

@@ -101,6 +101,7 @@ export class ExhibitionService {
           const categorySlug = category?.slug ?? '';
           return {
             ...stand,
+            isAvailable: stand.isAvailable ? true : false,
             size: category?.size ?? '',
             price: basePrice,
             vatPercentage: vatPct,
@@ -296,32 +297,18 @@ export class ExhibitionService {
       const activeBooking = stand.bookings[0] || null;
       return {
         id: stand.id,
+        isAvailable: stand.isAvailable ? true : false,
         standNumber: stand.standNumber,
         title: stand.title,
         hall: stand.category?.hall?.title || null,
         category: stand.category?.title || null,
         size: stand.category?.size || null,
         price: stand.category ? Number(stand.category.price) : 0,
-        status: stand.isAvailable === 0 ? 'booked' : 'available',
         bookingId: activeBooking?.id || null,
         bookedBy: activeBooking
           ? {
               name: activeBooking.userName || activeBooking.user?.name || null,
               email: activeBooking.email || activeBooking.user?.email || null,
-              companyName:
-                activeBooking.companyName ||
-                activeBooking.user?.companyName ||
-                null,
-              status: activeBooking.user
-                ? (activeBooking.user.status ?? 1)
-                : null,
-              statusText: activeBooking.user
-                ? activeBooking.user.status === 0
-                  ? 'Inactive'
-                  : activeBooking.user.status === 2
-                    ? 'Banned'
-                    : 'Active'
-                : null,
             }
           : null,
       };
@@ -332,15 +319,13 @@ export class ExhibitionService {
     return {
       success: true,
       message: 'Stands list retrieved successfully',
-      data: {
-        items,
-        meta: {
-          totalItems,
-          itemCount: items.length,
-          itemsPerPage: limit,
-          totalPages,
-          currentPage: page,
-        },
+      data: items,
+      meta_data: {
+        totalItems,
+        itemCount: items.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page,
       },
     };
   }

@@ -12,6 +12,9 @@ import {
   ResponseLatestExhibitionDto,
   ResponseStandDetailDto,
 } from './dto/response-exhibition.dto';
+import { RolesGuard } from 'src/common/guard/role/roles.guard';
+import { Roles } from 'src/common/guard/role/roles.decorator';
+import { Role } from 'src/common/guard/role/role.enum';
 
 @ApiTags('Application / Exhibition')
 @Controller('exhibition')
@@ -54,7 +57,8 @@ export class ExhibitionController {
     description: 'Unauthorized access',
   })
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.USER)
   @Get('stand/:standId')
   getStand(@Param('standId') standId: string) {
     return this.exhibitionService.getStand(standId);

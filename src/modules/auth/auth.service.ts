@@ -55,6 +55,7 @@ export class AuthService {
 
     return {
       success: true,
+      message: 'User profile fetched successfully',
       data: user,
     };
   }
