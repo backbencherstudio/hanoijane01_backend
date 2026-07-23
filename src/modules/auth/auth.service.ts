@@ -177,21 +177,27 @@ export class AuthService {
     };
 
     try {
-      const createOrUpdateAttachment = await this.prisma.attachment.upsert({
-        where: {
-          id: attachmentId,
-        },
-        create: attachment,
-        update: attachment,
-        select: {
-          id: true,
-          fileName: true,
-          filePath: true,
-          fileType: true,
-          byteSize: true,
-          mimeType: true,
-        },
-      });
+      const select = {
+        id: true,
+        fileName: true,
+        filePath: true,
+        fileType: true,
+        byteSize: true,
+        mimeType: true,
+      };
+      const createOrUpdateAttachment = attachmentId
+        ? await this.prisma.attachment.update({
+            where: {
+              id: attachmentId,
+              userId,
+            },
+            data: attachment,
+            select,
+          })
+        : await this.prisma.attachment.create({
+            data: attachment,
+            select,
+          });
 
       if (!createOrUpdateAttachment)
         throw new InternalServerErrorException('Failed to Upload attachment');
@@ -200,6 +206,7 @@ export class AuthService {
         message: 'Attachment uploaded successfully',
         data: {
           ...createOrUpdateAttachment,
+          byteSize: Number(createOrUpdateAttachment.byteSize),
           fileUrl: await NajimStorage.signedUrl(
             createOrUpdateAttachment.filePath,
             {
