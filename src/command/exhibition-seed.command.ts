@@ -238,7 +238,11 @@ export const exhibitionSeedStructure = {
 };
 
 @Injectable()
-@Command({ name: 'seed-exhibition', description: 'Seed or update the latest exhibition with halls, categories, and stands' })
+@Command({
+  name: 'seed-exhibition',
+  aliases: ['exhibition-seed'],
+  description: 'Seed or update the latest exhibition with halls, categories, and stands',
+})
 export class ExhibitionSeedCommand extends CommandRunner {
   constructor(private readonly prisma: PrismaService) {
     super();

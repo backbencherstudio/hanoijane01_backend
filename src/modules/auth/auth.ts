@@ -5,12 +5,33 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import appConfig from '../../config/app.config';
 import { MailService } from '../../mail/mail.service';
 import { emailOTP, bearer } from 'better-auth/plugins';
+import { createAuthMiddleware, APIError } from 'better-auth/api';
 
 const connectionString = appConfig().database.url;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 export const auth = betterAuth({
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/sign-up/email') return;
+
+      const body = ctx.body as Record<string, unknown> | undefined;
+      const email = typeof body?.email === 'string' ? body.email : undefined;
+      if (!email) return;
+
+      const existingUser = await prisma.user.findFirst({
+        where: { email, deletedAt: null },
+        select: { id: true },
+      });
+
+      if (existingUser) {
+        throw new APIError('BAD_REQUEST', {
+          message: 'User with this email already exists',
+        });
+      }
+    }),
+  },
   baseURL: appConfig().app.url,
   basePath: '/api/auth',
   secret: process.env.BETTER_AUTH_SECRET || 'better-auth-secret-1234567890',
@@ -99,4 +120,3 @@ export const auth = betterAuth({
 });
 
 export type BetterAuthSession = typeof auth.$Infer.Session;
-
