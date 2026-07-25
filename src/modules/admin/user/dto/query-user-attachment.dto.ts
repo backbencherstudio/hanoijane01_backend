@@ -9,14 +9,6 @@ export class QueryUserAttachmentDto {
       'Search string to filter by exhibitor name, email, company name, file name, or file type',
     example: 'Acme',
   })
-  q?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({
-    description: 'Search string alias for q',
-    example: 'Acme',
-  })
   search?: string;
 
   @IsOptional()

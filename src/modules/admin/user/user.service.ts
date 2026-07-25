@@ -92,7 +92,7 @@ export class UserService {
     const limit = query.limit ? Number(query.limit) : 8;
     const skip = (page - 1) * limit;
 
-    const searchKeyword = query.q || query.search;
+    const searchKeyword = query.search;
     const where_condition: Prisma.UserWhereInput = {
       deletedAt: null,
     };
@@ -286,7 +286,7 @@ export class UserService {
     const limit = query.limit ? Number(query.limit) : 8;
     const skip = (page - 1) * limit;
 
-    const searchKeyword = query.q || query.search;
+    const searchKeyword = query.search;
     const where_condition: Prisma.AttachmentWhereInput = {};
 
     if (query.userId) {

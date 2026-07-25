@@ -9,14 +9,6 @@ export class QueryUserDto {
       'Search string to filter users by name or email (case-insensitive partial match)',
     example: 'John',
   })
-  q?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({
-    description: 'Search string alias for q',
-    example: 'John',
-  })
   search?: string;
 
   @IsOptional()

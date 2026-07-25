@@ -8,5 +8,5 @@ export class QueryNotificationDto {
     description: 'Filter notification list by keyword',
     example: 'booking',
   })
-  q?: string;
+  search?: string;
 }

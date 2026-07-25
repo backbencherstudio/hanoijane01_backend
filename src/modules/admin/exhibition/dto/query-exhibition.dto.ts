@@ -8,5 +8,5 @@ export class QueryExhibitionDto {
     description: 'Optional search keyword to filter exhibitions',
     example: 'Tech Expo',
   })
-  q?: string;
+  search?: string;
 }

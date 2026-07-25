@@ -8,5 +8,5 @@ export class QueryContactDto {
     description: 'Filter contact messages by search keyword',
     example: 'inquiry',
   })
-  q?: string;
+  search?: string;
 }

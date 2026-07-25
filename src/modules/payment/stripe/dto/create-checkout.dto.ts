@@ -18,34 +18,6 @@ export class CreateBookingCheckoutDto {
   bookingId: string;
 
   @ApiPropertyOptional({
-    example: 'user@example.com',
-    description:
-      'Customer email address for Stripe receipt and notification. Optional if already on booking.',
-  })
-  @IsOptional()
-  @IsEmail()
-  customerEmail?: string;
-
-  @ApiPropertyOptional({
-    example: 150.0,
-    description:
-      'Optional custom payment amount in dollars. Defaults to booking totalAmount if omitted.',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0.5)
-  amount?: number;
-
-  @ApiPropertyOptional({
-    example: 'usd',
-    description:
-      'Currency code (e.g. "usd", "eur"). Defaults to booking currency or "usd".',
-  })
-  @IsOptional()
-  @IsString()
-  currency?: string;
-
-  @ApiPropertyOptional({
     example: 'http://localhost:3000/booking/success',
     description: 'Redirection URL upon successful payment.',
   })
@@ -62,4 +34,12 @@ export class CreateBookingCheckoutDto {
   cancelUrl?: string;
 }
 
-export class CreatePaymentIntentDto extends CreateBookingCheckoutDto {}
+export class CreatePaymentIntentDto {
+  @ApiProperty({
+    example: 'clx1booking...',
+    description: 'The unique ID of the unpaid booking record.',
+  })
+  @IsNotEmpty()
+  @IsString()
+  bookingId: string;
+}

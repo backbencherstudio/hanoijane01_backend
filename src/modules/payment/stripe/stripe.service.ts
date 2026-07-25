@@ -60,10 +60,9 @@ export class StripeService {
 
     // Determine amount and currency directly from booking
     const amount =
-      dto.amount ||
       Number(booking.totalAmount) ||
       (stand?.category?.price ? Number(stand.category.price) : 0);
-    const currency = (dto.currency || booking.currency || 'usd').toLowerCase();
+    const currency = (booking.currency || 'usd').toLowerCase();
 
     if (amount <= 0) {
       throw new BadRequestException(
@@ -71,7 +70,7 @@ export class StripeService {
       );
     }
 
-    const customerEmail = dto.customerEmail || booking.email || undefined;
+    const customerEmail = booking.email || undefined;
     const title = stand
       ? `Stand Reservation: ${stand.title || stand.standNumber}`
       : `Booking #${booking.id}`;
@@ -148,10 +147,9 @@ export class StripeService {
     }
 
     const amount =
-      dto.amount ||
       Number(booking.totalAmount) ||
       (stand?.category?.price ? Number(stand.category.price) : 0);
-    const currency = (dto.currency || booking.currency || 'usd').toLowerCase();
+    const currency = (booking.currency || 'usd').toLowerCase();
 
     const intent = await StripePayment.createPaymentIntent({
       amount,
