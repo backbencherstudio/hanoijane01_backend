@@ -27,6 +27,8 @@ async function bootstrap() {
       appConfig().app.client_app_url,
       'http://localhost:3000',
       'http://localhost:3001',
+      'http://10.10.9.45:3000',
+      'https://itba-expo.vercel.app',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

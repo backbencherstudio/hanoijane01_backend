@@ -15,6 +15,7 @@ import { UpdateAuthDto } from './dto/update-auth.dto';
 import { UploadAttachmentDto } from './dto/upload-attachment.dto';
 import { NajimStorage } from '../../common/lib/Disk/NajimStorage';
 import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
+import { Attachment } from 'prisma/generated/browser';
 
 @Injectable()
 export class AuthService {
@@ -66,17 +67,18 @@ export class AuthService {
     }
 
     if (user.attachments?.length > 0) {
-      user.attachments = await Promise.all(
+      user.attachments = (await Promise.all(
         user.attachments.map(async (attachment) => {
           return {
             ...attachment,
+            byteSize: Number(attachment.byteSize),
             filePath: await NajimStorage.signedUrl(attachment.filePath, {
               expiresIn: 60 * 60 * 24 * 7,
               signed: true,
             }),
           };
         }),
-      );
+      )) as (Attachment & { byteSize: number })[];
     }
 
     if (user.type !== 'user') {

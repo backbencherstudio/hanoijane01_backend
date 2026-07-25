@@ -11,7 +11,28 @@ const connectionString = appConfig().database.url;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+const isProduction = appConfig().nodeEnv === 'production';
+
 export const auth = betterAuth({
+  trustedOrigins: [
+    appConfig().app.client_app_url,
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://10.10.9.45:3000',
+    'https://itba-expo.vercel.app',
+  ],
+  advanced: {
+    useSecureCookies: isProduction,
+    cookies: {
+      session_token: {
+        attributes: {
+          sameSite: isProduction ? 'none' : 'strict',
+          secure: isProduction,
+          httpOnly: true,
+        },
+      },
+    },
+  },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== '/sign-up/email') return;

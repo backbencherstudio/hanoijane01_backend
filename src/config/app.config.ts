@@ -111,4 +111,6 @@ export default () => ({
       password: process.env.SYSTEM_PASSWORD,
     },
   },
+
+  nodeEnv: process.env.NODE_ENV,
 });
