@@ -81,3 +81,23 @@ export class ResendVerificationAuthDto {
   })
   email: string;
 }
+
+export class ChangePasswordDto {
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(8, { message: 'Old password should be minimum 8 characters' })
+  @ApiProperty({
+    description: 'Current/Old password',
+    example: 'oldpassword123',
+  })
+  oldPassword: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(8, { message: 'New password should be minimum 8 characters' })
+  @ApiProperty({
+    description: 'New password',
+    example: 'newpassword123',
+  })
+  newPassword: string;
+}

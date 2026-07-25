@@ -1,9 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { NajimStorage } from '../../common/lib/Disk/NajimStorage';
-import appConfig from '../../config/app.config';
 import { UserRepository } from '../../common/repository/user/user.repository';
 import { Role } from '../../common/guard/role/role.enum';
+import { Prisma } from 'prisma/generated/client';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 
@@ -16,42 +15,25 @@ export class NotificationService {
 
   // Database operations
   async findAll(user_id: string) {
-    const where_condition = {};
     const userDetails = await this.userRepository.getUserDetails(user_id);
+    const where_condition: Prisma.NotificationWhereInput = {};
 
-    if (userDetails.type == Role.ADMIN) {
-      where_condition['OR'] = [
-        { receiverId: { equals: user_id } },
-        { receiverId: { equals: null } },
+    if (userDetails.type === Role.ADMIN) {
+      where_condition.OR = [
+        { receiverId: user_id },
+        { receiverId: null },
       ];
+    } else {
+      where_condition.receiverId = user_id;
     }
 
     const notifications = await this.prisma.notification.findMany({
-      where: {
-        ...where_condition,
-      },
+      where: where_condition,
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
-        senderId: true,
-        receiverId: true,
-        entityId: true,
+        readAt: true,
         createdAt: true,
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-          },
-        },
-        receiver: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-          },
-        },
         notificationEvent: {
           select: {
             id: true,
@@ -62,31 +44,30 @@ export class NotificationService {
       },
     });
 
-    // add url to avatar
-    if (notifications.length > 0) {
-      for (const notification of notifications) {
-        if (notification.sender && notification.sender.avatar) {
-          notification.sender['avatar'] = NajimStorage.url(
-            notification.sender.avatar,
-          );
-        }
+    const formattedNotifications = notifications.map((notification) => {
+      const rawType = notification.notificationEvent?.type || 'system';
+      const title = rawType.charAt(0).toUpperCase() + rawType.slice(1);
+      const description = notification.notificationEvent?.text || '';
 
-        if (notification.receiver && notification.receiver.avatar) {
-          notification.receiver['avatar'] = NajimStorage.url(
-            notification.receiver.avatar,
-          );
-        }
-      }
-    }
+      return {
+        id: notification.id,
+        title,
+        description,
+        createdAt: notification.createdAt,
+        readAt: notification.readAt,
+      };
+    });
 
     return {
       success: true,
       message: 'Notifications retrieved successfully',
-      data: notifications,
+      data: formattedNotifications,
     };
   }
 
   async remove(id: string, user_id: string) {
+    const userDetails = await this.userRepository.getUserDetails(user_id);
+
     const notification = await this.prisma.notification.findUnique({
       where: {
         id: id,
@@ -94,6 +75,10 @@ export class NotificationService {
     });
 
     if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    if (userDetails.type !== Role.ADMIN && notification.receiverId !== user_id) {
       throw new NotFoundException('Notification not found');
     }
 
@@ -110,25 +95,96 @@ export class NotificationService {
   }
 
   async removeAll(user_id: string) {
+    const userDetails = await this.userRepository.getUserDetails(user_id);
+    const deleteWhere: Prisma.NotificationWhereInput = {};
+
+    if (userDetails.type === Role.ADMIN) {
+      deleteWhere.OR = [{ receiverId: user_id }, { receiverId: null }];
+    } else {
+      deleteWhere.receiverId = user_id;
+    }
+
     const notifications = await this.prisma.notification.findMany({
-      where: {
-        OR: [{ receiverId: user_id }, { receiverId: null }],
-      },
+      where: deleteWhere,
     });
 
     if (notifications.length === 0) {
-      throw new NotFoundException('Notification not found');
+      throw new NotFoundException('Notifications not found');
     }
 
     await this.prisma.notification.deleteMany({
-      where: {
-        OR: [{ receiverId: user_id }, { receiverId: null }],
-      },
+      where: deleteWhere,
     });
 
     return {
       success: true,
       message: 'All notifications deleted successfully',
+    };
+  }
+
+  async markAsRead(id: string, user_id: string) {
+    const userDetails = await this.userRepository.getUserDetails(user_id);
+
+    const notification = await this.prisma.notification.findUnique({
+      where: {
+        id: id,
+      },
+    });
+
+    if (!notification) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    if (userDetails.type !== Role.ADMIN && notification.receiverId !== user_id) {
+      throw new NotFoundException('Notification not found');
+    }
+
+    await this.prisma.notification.update({
+      where: {
+        id: id,
+      },
+      data: {
+        readAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Notification marked as read successfully',
+    };
+  }
+
+  async markAllAsRead(user_id: string) {
+    const userDetails = await this.userRepository.getUserDetails(user_id);
+    const updateWhere: Prisma.NotificationWhereInput = {};
+
+    if (userDetails.type === Role.ADMIN) {
+      updateWhere.OR = [{ receiverId: user_id }, { receiverId: null }];
+    } else {
+      updateWhere.receiverId = user_id;
+    }
+
+    // Only update notifications that are unread
+    updateWhere.readAt = null;
+
+    const notifications = await this.prisma.notification.findMany({
+      where: updateWhere,
+    });
+
+    if (notifications.length === 0) {
+      throw new NotFoundException('No unread notifications found');
+    }
+
+    await this.prisma.notification.updateMany({
+      where: updateWhere,
+      data: {
+        readAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'All notifications marked as read successfully',
     };
   }
 
@@ -153,3 +209,4 @@ export class NotificationService {
     return `This action removes a #${id} notification`;
   }
 }
+

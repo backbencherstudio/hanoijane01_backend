@@ -4,11 +4,14 @@ export class NotificationDto {
   @ApiProperty({ example: 'clx1abc...', description: 'Notification ID' })
   id: string;
 
-  @ApiProperty({ example: 'System Event', nullable: true })
-  type: string | null;
+  @ApiProperty({ example: 'Booking', nullable: true })
+  title: string | null;
 
-  @ApiProperty({ example: 'Your stand booking was confirmed!', nullable: true })
-  text: string | null;
+  @ApiProperty({
+    example: 'Your stand booking was confirmed!',
+    nullable: true,
+  })
+  description: string | null;
 
   @ApiProperty({ example: '2026-07-18T00:00:00.000Z', nullable: true })
   readAt: Date | null;

@@ -12,6 +12,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -37,6 +38,7 @@ import {
   ResetPasswordAuthDto,
   VerifyEmailAuthDto,
   ResendVerificationAuthDto,
+  ChangePasswordDto,
 } from './dto/query-auth.dto';
 import {
   ApiSuccessResponse,
@@ -294,6 +296,36 @@ export class AuthController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.authService.uploadAttachment(session.user.id, data, file);
+  }
+
+  @ApiOperation({
+    summary: 'Change password for authenticated user',
+    description:
+      'Allows the authenticated user to change their password by verifying their old password.',
+  })
+  @ApiBearerAuth()
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({
+    status: 200,
+    type: ApiSuccessResponse,
+    description: 'Password changed successfully',
+  })
+  @UseGuards(AuthGuard)
+  @Post('change-password')
+  async changePassword(@Req() req: Request, @Body() body: ChangePasswordDto) {
+    await auth.api.changePassword({
+      body: {
+        currentPassword: body.oldPassword,
+        newPassword: body.newPassword,
+        revokeOtherSessions: true,
+      },
+      headers: req.headers as HeadersInit,
+    });
+
+    return {
+      success: true,
+      message: 'Password updated successfully',
+    };
   }
 
   // Catch-all proxy for Better Auth endpoints

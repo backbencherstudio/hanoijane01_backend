@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Param, Delete, Patch, UseGuards, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import {
   ApiBearerAuth,
@@ -7,9 +7,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '../../common/guard/role/role.enum';
-import { Roles } from '../../common/guard/role/roles.decorator';
-import { RolesGuard } from '../../common/guard/role/roles.guard';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Request } from 'express';
 import {
@@ -18,10 +15,9 @@ import {
 } from './dto/response-notification.dto';
 
 @ApiBearerAuth()
-@ApiTags('Admin / Notification')
-@UseGuards(AuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
-@Controller('admin/notification')
+@ApiTags('Notification')
+@UseGuards(AuthGuard)
+@Controller('notification')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
@@ -63,6 +59,46 @@ export class NotificationController {
   ) {
     const user_id = req.user.id;
     return this.notificationService.remove(notificationId, user_id);
+  }
+
+  @Patch(':notificationId/read')
+  @ApiOperation({
+    summary: 'Mark a notification as read by id',
+    description: 'Updates the readAt timestamp of a specific notification.',
+  })
+  @ApiParam({
+    name: 'notificationId',
+    type: String,
+    required: true,
+    description: 'The unique ID of the notification record to mark as read.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: NotificationActionResponse,
+    description: 'Notification marked as read successfully',
+  })
+  async markAsRead(
+    @Req() req: Request,
+    @Param('notificationId') notificationId: string,
+  ) {
+    const user_id = req.user.id;
+    return this.notificationService.markAsRead(notificationId, user_id);
+  }
+
+  @Patch('read')
+  @ApiOperation({
+    summary: 'Mark all notifications as read',
+    description:
+      'Updates the readAt timestamp of all unread notifications assigned to the user.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: NotificationActionResponse,
+    description: 'All notifications marked as read successfully',
+  })
+  async markAllAsRead(@Req() req: Request) {
+    const user_id = req.user.id;
+    return this.notificationService.markAllAsRead(user_id);
   }
 
   @ApiOperation({

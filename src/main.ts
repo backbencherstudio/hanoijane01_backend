@@ -102,7 +102,7 @@ async function bootstrap() {
     swaggerOptions: {
       defaultModelsExpandDepth: -1,
       displayOperationId: false,
-      docExpansion: 'list',
+      docExpansion: 'none',
     },
     customCss: `
       .swagger-ui .filter { display: none !important; }

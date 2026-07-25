@@ -110,7 +110,19 @@ export class MeResponseData {
   companyName: string | null;
 
   @ApiProperty({ example: null, nullable: true })
+  companyPhoneNumber: string | null;
+
+  @ApiProperty({ example: null, nullable: true })
   companyAddress: string | null;
+
+  @ApiProperty({ example: null, nullable: true })
+  companyBio: string | null;
+
+  @ApiProperty({ example: null, nullable: true })
+  websiteLink: string | null;
+
+  @ApiProperty({ type: () => [UploadAttachmentResponseData], nullable: true })
+  attachments?: UploadAttachmentResponseData[] | null;
 
   @ApiProperty({ example: 'user' })
   type: string;

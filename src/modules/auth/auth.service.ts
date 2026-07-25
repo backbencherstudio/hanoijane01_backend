@@ -257,30 +257,7 @@ export class AuthService {
     }
   }
 
-  async changePassword({ user_id, oldPassword, newPassword }) {
-    const user = await this.userRepository.getUserDetails(user_id);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
 
-    const _isValidPassword = await this.userRepository.validatePassword({
-      email: user.email,
-      password: oldPassword,
-    });
-    if (!_isValidPassword) {
-      throw new BadRequestException('Invalid password');
-    }
-
-    await this.userRepository.changePassword({
-      email: user.email,
-      password: newPassword,
-    });
-
-    return {
-      success: true,
-      message: 'Password updated successfully',
-    };
-  }
 
   async createStripeCustomer(userId: string) {
     try {
