@@ -126,3 +126,64 @@ export class AdminUserStatsResponseDto {
   @ApiProperty({ type: AdminUserStatsDataDto })
   data: AdminUserStatsDataDto;
 }
+
+export class AdminUserAttachmentUserDto {
+  @ApiProperty({ example: 'clx1abc...' })
+  id: string;
+
+  @ApiProperty({ example: 'John Doe', nullable: true })
+  name: string | null;
+
+  @ApiProperty({ example: 'john@example.com', nullable: true })
+  email: string | null;
+
+  @ApiProperty({ example: '+1234567890', nullable: true })
+  phoneNumber: string | null;
+}
+
+export class AdminUserAttachmentDto {
+  @ApiProperty({ example: 'att_123' })
+  id: string;
+
+  @ApiProperty({ example: 'trade_licence.pdf', nullable: true })
+  fileName: string | null;
+
+  @ApiProperty({ example: 'attachments/trade_licence.pdf' })
+  filePath: string;
+
+  @ApiProperty({
+    example: 'http://localhost:4000/storage/attachments/trade_licence.pdf',
+    nullable: true,
+  })
+  fileUrl: string | null;
+
+  @ApiProperty({ example: 'Trade Licence', nullable: true })
+  fileType: string | null;
+
+  @ApiProperty({ example: 'application/pdf', nullable: true })
+  mimeType: string | null;
+
+  @ApiProperty({ example: 1048576, nullable: true })
+  byteSize: number | null;
+
+  @ApiProperty({ example: '2026-06-20T00:00:00.000Z' })
+  createdAt: Date;
+
+  @ApiProperty({ type: AdminUserAttachmentUserDto, nullable: true })
+  user: AdminUserAttachmentUserDto | null;
+}
+
+export class AdminUserAttachmentListResponse {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ example: 'User attachments retrieved successfully' })
+  message: string;
+
+  @ApiProperty({ type: [AdminUserAttachmentDto] })
+  data: AdminUserAttachmentDto[];
+
+  @ApiProperty({ type: AdminUserMetaDataDto })
+  meta_data: AdminUserMetaDataDto;
+}
+

@@ -6,6 +6,7 @@ import {
 import { CreateUserAdminDto } from './dto/create-user.dto';
 import { UpdateUserAdminDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
+import { QueryUserAttachmentDto } from './dto/query-user-attachment.dto';
 import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UserRepository } from '../../../common/repository/user/user.repository';
@@ -278,5 +279,107 @@ export class UserService {
   async remove(id: string) {
     const user = await this.userRepository.deleteUser(id);
     return user;
+  }
+
+  async getAttachments(query: QueryUserAttachmentDto) {
+    const page = query.page ? Number(query.page) : 1;
+    const limit = query.limit ? Number(query.limit) : 8;
+    const skip = (page - 1) * limit;
+
+    const searchKeyword = query.q || query.search;
+    const where_condition: Prisma.AttachmentWhereInput = {};
+
+    if (query.userId) {
+      where_condition.userId = query.userId;
+    }
+
+    if (query.fileType) {
+      where_condition.fileType = {
+        contains: query.fileType,
+        mode: 'insensitive',
+      };
+    }
+
+    if (searchKeyword) {
+      where_condition.OR = [
+        { fileName: { contains: searchKeyword, mode: 'insensitive' } },
+        { fileType: { contains: searchKeyword, mode: 'insensitive' } },
+        {
+          user: {
+            OR: [
+              { name: { contains: searchKeyword, mode: 'insensitive' } },
+              { email: { contains: searchKeyword, mode: 'insensitive' } },
+              { companyName: { contains: searchKeyword, mode: 'insensitive' } },
+            ],
+          },
+        },
+      ];
+    }
+
+    const [total, attachments] = await Promise.all([
+      this.prisma.attachment.count({ where: where_condition }),
+      this.prisma.attachment.findMany({
+        where: where_condition,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phoneNumber: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const formattedAttachments = await Promise.all(
+      attachments.map(async (item) => {
+        let fileUrl: string | null = null;
+        if (item.filePath) {
+          fileUrl = await NajimStorage.signedUrl(item.filePath, {
+            expiresIn: 60 * 60 * 24 * 7,
+            signed: true,
+          });
+        }
+
+        return {
+          id: item.id,
+          fileName: item.fileName,
+          filePath: item.filePath,
+          fileUrl,
+          fileType: item.fileType,
+          mimeType: item.mimeType,
+          byteSize: item.byteSize ? Number(item.byteSize) : null,
+          createdAt: item.createdAt,
+          user: item.user
+            ? {
+                id: item.user.id,
+                name: item.user.name,
+                email: item.user.email,
+                phoneNumber: item.user.phoneNumber,
+              }
+            : null,
+        };
+      }),
+    );
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    return {
+      success: true,
+      message: 'User attachments retrieved successfully',
+      data: formattedAttachments,
+      meta_data: {
+        totalItems: total,
+        itemCount: formattedAttachments.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page,
+      },
+    };
   }
 }

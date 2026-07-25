@@ -13,6 +13,7 @@ import { UserService } from './user.service';
 import { CreateUserAdminDto } from './dto/create-user.dto';
 import { UpdateUserAdminDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
+import { QueryUserAttachmentDto } from './dto/query-user-attachment.dto';
 import {
   ApiBearerAuth,
   ApiExcludeEndpoint,
@@ -27,6 +28,7 @@ import { RolesGuard } from '../../../common/guard/role/roles.guard';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 import {
   AdminUserActionResponse,
+  AdminUserAttachmentListResponse,
   AdminUserDetailResponse,
   AdminUserListResponse,
   AdminUserStatsResponseDto,
@@ -53,6 +55,22 @@ export class UserController {
   @Get('stats')
   async getStats() {
     return this.userService.getStats();
+  }
+
+  @ApiOperation({
+    summary:
+      'Get all user attachments / documents for Document Review page (Admin)',
+    description:
+      'Retrieves a paginated list of user uploaded attachments (documents) with search (user name, email, company name, file name, file type), optional filters (userId, fileType), and pagination (page, limit). Returns file access URLs and basic user details (id, name, email, phoneNumber).',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminUserAttachmentListResponse,
+    description: 'Paginated list of user attachments',
+  })
+  @Get('attachments')
+  async getAttachments(@Query() query: QueryUserAttachmentDto) {
+    return this.userService.getAttachments(query);
   }
 
   @ApiOperation({
