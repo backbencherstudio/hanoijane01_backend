@@ -34,6 +34,9 @@ export class ExhibitionService {
                     standNumber: true,
                     title: true,
                   },
+                  orderBy: {
+                    title: 'asc',
+                  },
                 },
                 _count: {
                   select: {
@@ -60,6 +63,9 @@ export class ExhibitionService {
                 size: true,
               },
             },
+          },
+          orderBy: {
+            title: 'asc',
           },
         },
       },
@@ -94,36 +100,49 @@ export class ExhibitionService {
               const totalPrice = Number(
                 (basePrice + basePrice * (vatPct / 100)).toFixed(2),
               );
+              const sortedStands = [...stands].sort((a, b) =>
+                a.standNumber.localeCompare(b.standNumber, undefined, {
+                  numeric: true,
+                  sensitivity: 'base',
+                }),
+              );
               return {
                 ...standCategory,
                 price: basePrice,
                 vatPercentage: vatPct,
                 totalPrice,
-                stands,
+                stands: sortedStands,
                 totalStands: _count.stands ?? 0,
               };
             },
           ),
         })),
-        stands: exhibition.stands.map(({ category, ...stand }) => {
-          const basePrice = (category?.priceInMinorUnit ?? 0) / 100;
-          const vatPct = Number(category?.vatPercentage ?? 0);
-          const totalPrice = Number(
-            (basePrice + basePrice * (vatPct / 100)).toFixed(2),
-          );
-          const categoryTitle = category?.title ?? '';
-          const categorySlug = category?.slug ?? '';
-          return {
-            ...stand,
-            isAvailable: stand.isAvailable ? true : false,
-            size: category?.size ?? '',
-            price: basePrice,
-            vatPercentage: vatPct,
-            totalPrice,
-            categoryTitle,
-            categorySlug,
-          };
-        }),
+        stands: exhibition.stands
+          .map(({ category, ...stand }) => {
+            const basePrice = (category?.priceInMinorUnit ?? 0) / 100;
+            const vatPct = Number(category?.vatPercentage ?? 0);
+            const totalPrice = Number(
+              (basePrice + basePrice * (vatPct / 100)).toFixed(2),
+            );
+            const categoryTitle = category?.title ?? '';
+            const categorySlug = category?.slug ?? '';
+            return {
+              ...stand,
+              isAvailable: stand.isAvailable ? true : false,
+              size: category?.size ?? '',
+              price: basePrice,
+              vatPercentage: vatPct,
+              totalPrice,
+              categoryTitle,
+              categorySlug,
+            };
+          })
+          .sort((a, b) =>
+            a.standNumber.localeCompare(b.standNumber, undefined, {
+              numeric: true,
+              sensitivity: 'base',
+            }),
+          ),
       },
     };
   }

@@ -91,25 +91,32 @@ export class ExhibitionService {
         endedAt: exhibition.endedAt,
         bookingStatedAt: exhibition.bookingStatedAt,
         bookingEndedAt: exhibition.bookingEndedAt,
-        stands: exhibition.stands.map(({ category, ...stand }) => {
-          const basePrice = (category?.priceInMinorUnit ?? 0) / 100;
-          const vatPct = Number(category?.vatPercentage ?? 0);
-          const totalPrice = Number(
-            (basePrice + basePrice * (vatPct / 100)).toFixed(2),
-          );
-          const categoryTitle = category?.title ?? '';
-          const categorySlug = category?.slug ?? '';
-          return {
-            ...stand,
-            isAvailable: stand.isAvailable ? true : false,
-            size: category?.size ?? '',
-            price: basePrice,
-            vatPercentage: vatPct,
-            totalPrice,
-            categoryTitle,
-            categorySlug,
-          };
-        }),
+        stands: exhibition.stands
+          .map(({ category, ...stand }) => {
+            const basePrice = (category?.priceInMinorUnit ?? 0) / 100;
+            const vatPct = Number(category?.vatPercentage ?? 0);
+            const totalPrice = Number(
+              (basePrice + basePrice * (vatPct / 100)).toFixed(2),
+            );
+            const categoryTitle = category?.title ?? '';
+            const categorySlug = category?.slug ?? '';
+            return {
+              ...stand,
+              isAvailable: stand.isAvailable ? true : false,
+              size: category?.size ?? '',
+              price: basePrice,
+              vatPercentage: vatPct,
+              totalPrice,
+              categoryTitle,
+              categorySlug,
+            };
+          })
+          .sort((a, b) =>
+            a.standNumber.localeCompare(b.standNumber, undefined, {
+              numeric: true,
+              sensitivity: 'base',
+            }),
+          ),
       },
     };
   }
@@ -293,26 +300,34 @@ export class ExhibitionService {
       }),
     ]);
 
-    const items = stands.map((stand) => {
-      const activeBooking = stand.bookings[0] || null;
-      return {
-        id: stand.id,
-        isAvailable: stand.isAvailable ? true : false,
-        standNumber: stand.standNumber,
-        title: stand.title,
-        hall: stand.category?.hall?.title || null,
-        category: stand.category?.title || null,
-        size: stand.category?.size || null,
-        price: stand.category ? Number(stand.category.price) : 0,
-        bookingId: activeBooking?.id || null,
-        bookedBy: activeBooking
-          ? {
-              name: activeBooking.userName || activeBooking.user?.name || null,
-              email: activeBooking.email || activeBooking.user?.email || null,
-            }
-          : null,
-      };
-    });
+    const items = stands
+      .map((stand) => {
+        const activeBooking = stand.bookings[0] || null;
+        return {
+          id: stand.id,
+          isAvailable: stand.isAvailable ? true : false,
+          standNumber: stand.standNumber,
+          title: stand.title,
+          hall: stand.category?.hall?.title || null,
+          category: stand.category?.title || null,
+          size: stand.category?.size || null,
+          price: stand.category ? Number(stand.category.price) : 0,
+          bookingId: activeBooking?.id || null,
+          bookedBy: activeBooking
+            ? {
+                name:
+                  activeBooking.userName || activeBooking.user?.name || null,
+                email: activeBooking.email || activeBooking.user?.email || null,
+              }
+            : null,
+        };
+      })
+      .sort((a, b) =>
+        a.standNumber.localeCompare(b.standNumber, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        }),
+      );
 
     const totalPages = Math.ceil(totalItems / limit);
 

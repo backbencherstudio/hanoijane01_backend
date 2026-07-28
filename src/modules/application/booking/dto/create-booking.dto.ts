@@ -93,6 +93,6 @@ export class CreateBookingDto {
     type: 'string',
     format: 'binary',
   })
-  @IsNotEmpty()
+  @IsOptional()
   signature: Express.Multer.File;
 }
