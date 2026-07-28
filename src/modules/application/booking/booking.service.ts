@@ -216,10 +216,13 @@ export class BookingService {
       success: true,
       message: 'Bookings retrieved successfully',
       data: bookings.map((booking) => {
-        const { stand, ...restBooking } = booking;
+        const { stand, status, ...restBooking } = booking;
         return {
-          restBooking,
+          ...restBooking,
+          status: status === 1 ? 'BOOKED' : 'PENDING',
           standId: stand.id,
+          standNumber: stand.standNumber,
+          standTitle: stand.title,
           category: stand.category.title,
           size: stand.category.size,
           hall: stand.category.hall?.title,
