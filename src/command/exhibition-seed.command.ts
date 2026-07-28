@@ -42,7 +42,7 @@ export const exhibitionSeedStructure = {
           })),
         },
         {
-          title: 'Premium Size (6m x 2m, rectangle)',
+          title: 'Premium Size 1',
           slug: 'goffs-complex-premium-6x2',
           size: '6m x 2m, rectangle',
           price: 3000,
@@ -58,7 +58,7 @@ export const exhibitionSeedStructure = {
           ],
         },
         {
-          title: 'Premium Size (4m x 2m, rectangle)',
+          title: 'Premium Size 2',
           slug: 'goffs-complex-premium-4x2',
           size: '4m x 2m, rectangle',
           price: 3000,
@@ -74,7 +74,7 @@ export const exhibitionSeedStructure = {
           ],
         },
         {
-          title: 'Premium Size (4m x 3.5m, corner)',
+          title: 'Premium Size 3',
           slug: 'goffs-complex-premium-4x3.5',
           size: '4m x 3.5m, corner',
           price: 3000,
@@ -149,7 +149,7 @@ export const exhibitionSeedStructure = {
           ],
         },
         {
-          title: 'Premium Size (3m x 3m, corner)',
+          title: 'Premium Size A',
           slug: 'marquee-premium-3x3',
           size: '3m x 3m, corner',
           price: 2250,
@@ -165,7 +165,7 @@ export const exhibitionSeedStructure = {
           ],
         },
         {
-          title: 'Premium Size (3m x 4m, square)',
+          title: 'Premium Size B',
           slug: 'marquee-premium-3x4',
           size: '3m x 4m, square',
           price: 2700,
@@ -181,7 +181,7 @@ export const exhibitionSeedStructure = {
           ],
         },
         {
-          title: 'Premium Size (5m x 2m, rectangle)',
+          title: 'Premium Size C',
           slug: 'marquee-premium-5x2',
           size: '5m x 2m, rectangle',
           price: 2250,
@@ -197,7 +197,7 @@ export const exhibitionSeedStructure = {
           ],
         },
         {
-          title: 'Premium Size (4m x 3m, corner)',
+          title: 'Premium Size D',
           slug: 'marquee-premium-4x3',
           size: '4m x 3m, corner',
           price: 1600,
@@ -264,6 +264,12 @@ export const exhibitionSeedStructure = {
               title: 'Outdoor Stand 5',
               description:
                 'Spacious outdoor plot (10m x 5m) near main venue walkways for open-air visitor engagement.',
+            },
+            {
+              standNumber: 'O6',
+              title: 'Outdoor Stand 6',
+              description:
+                'Versatile outdoor exhibition plot (10m x 5m) suitable for high foot-traffic displays and open-air activities.',
             },
           ],
         },
