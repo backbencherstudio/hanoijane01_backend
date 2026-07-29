@@ -35,6 +35,18 @@ export class BookingService {
       );
     }
     if (stand.isAvailable === 0) {
+      await this.prisma.booking.updateMany({
+        where: {
+          userId: session.user.id,
+          standId: createBookingDto.standId,
+          paymentStatus: 'unpaid',
+        },
+        data: {
+          paymentStatus: 'canceled',
+          status: -1,
+        },
+      });
+
       throw new BadRequestException(
         `Stand with ID ${createBookingDto.standId} is already booked`,
       );
@@ -61,68 +73,57 @@ export class BookingService {
       signaturePathToSave = meta.fileKey;
     }
 
-    const booking = await this.prisma.booking.create({
-      data: {
+    // Reuse existing unpaid booking for the same user and stand if present to prevent duplicates
+    const existingUnpaidBooking = await this.prisma.booking.findFirst({
+      where: {
         userId: session.user.id,
         standId: createBookingDto.standId,
-        userName: createBookingDto.userName,
-        companyName: createBookingDto.companyName,
-        companyAddress: createBookingDto.companyAddress,
-        email: createBookingDto.email,
-        phoneNumber: createBookingDto.phoneNumber,
-        termsAndConditionsAccepted: createBookingDto.termsAndConditionsAccepted,
-        onBehalfOf: createBookingDto.onBehalfOf || null,
-        title: createBookingDto.title || null,
-        signaturePath: signaturePathToSave,
-        subTotalAmount,
-        vatAmount,
-        vatPercentage: vatPct,
-        totalAmount,
         paymentStatus: 'unpaid',
-        paymentMethod: 'stripe',
         status: 0,
+        deletedAt: null,
       },
-      select: {
-        id: true,
-        userName: true,
-        companyName: true,
-        companyAddress: true,
-        email: true,
-        phoneNumber: true,
-        termsAndConditionsAccepted: true,
-        onBehalfOf: true,
-        title: true,
-        signaturePath: true,
-        subTotalAmount: true,
-        vatAmount: true,
-        vatPercentage: true,
-        totalAmount: true,
-        paymentStatus: true,
-        paymentMethod: true,
-        status: true,
-        stand: {
-          select: {
-            id: true,
-            standNumber: true,
-            title: true,
-            category: {
-              select: {
-                title: true,
-                slug: true,
-                size: true,
-                hall: {
-                  select: {
-                    title: true,
-                    exhibition: {
-                      select: {
-                        title: true,
-                        slug: true,
-                        location: true,
-                        startedAt: true,
-                        endedAt: true,
-                        bookingStatedAt: true,
-                        bookingEndedAt: true,
-                      },
+    });
+
+    const bookingSelect = {
+      id: true,
+      userName: true,
+      companyName: true,
+      companyAddress: true,
+      email: true,
+      phoneNumber: true,
+      termsAndConditionsAccepted: true,
+      onBehalfOf: true,
+      title: true,
+      signaturePath: true,
+      subTotalAmount: true,
+      vatAmount: true,
+      vatPercentage: true,
+      totalAmount: true,
+      paymentStatus: true,
+      paymentMethod: true,
+      status: true,
+      stand: {
+        select: {
+          id: true,
+          standNumber: true,
+          title: true,
+          category: {
+            select: {
+              title: true,
+              slug: true,
+              size: true,
+              hall: {
+                select: {
+                  title: true,
+                  exhibition: {
+                    select: {
+                      title: true,
+                      slug: true,
+                      location: true,
+                      startedAt: true,
+                      endedAt: true,
+                      bookingStatedAt: true,
+                      bookingEndedAt: true,
                     },
                   },
                 },
@@ -131,7 +132,54 @@ export class BookingService {
           },
         },
       },
-    });
+    };
+
+    let booking;
+    if (existingUnpaidBooking) {
+      booking = await this.prisma.booking.update({
+        where: { id: existingUnpaidBooking.id },
+        data: {
+          userName: createBookingDto.userName,
+          companyName: createBookingDto.companyName,
+          companyAddress: createBookingDto.companyAddress,
+          email: createBookingDto.email,
+          phoneNumber: createBookingDto.phoneNumber,
+          termsAndConditionsAccepted: createBookingDto.termsAndConditionsAccepted,
+          onBehalfOf: createBookingDto.onBehalfOf || null,
+          title: createBookingDto.title || null,
+          ...(signaturePathToSave ? { signaturePath: signaturePathToSave } : {}),
+          subTotalAmount,
+          vatAmount,
+          vatPercentage: vatPct,
+          totalAmount,
+        },
+        select: bookingSelect,
+      });
+    } else {
+      booking = await this.prisma.booking.create({
+        data: {
+          userId: session.user.id,
+          standId: createBookingDto.standId,
+          userName: createBookingDto.userName,
+          companyName: createBookingDto.companyName,
+          companyAddress: createBookingDto.companyAddress,
+          email: createBookingDto.email,
+          phoneNumber: createBookingDto.phoneNumber,
+          termsAndConditionsAccepted: createBookingDto.termsAndConditionsAccepted,
+          onBehalfOf: createBookingDto.onBehalfOf || null,
+          title: createBookingDto.title || null,
+          signaturePath: signaturePathToSave,
+          subTotalAmount,
+          vatAmount,
+          vatPercentage: vatPct,
+          totalAmount,
+          paymentStatus: 'unpaid',
+          paymentMethod: 'stripe',
+          status: 0,
+        },
+        select: bookingSelect,
+      });
+    }
 
     const {
       stand: { category, ...restStand },
@@ -177,6 +225,7 @@ export class BookingService {
           id: true,
           totalAmount: true,
           status: true,
+          paymentStatus: true,
           createdAt: true,
           stand: {
             select: {
@@ -217,9 +266,19 @@ export class BookingService {
       message: 'Bookings retrieved successfully',
       data: bookings.map((booking) => {
         const { stand, status, ...restBooking } = booking;
+        const formattedStatus =
+          status === 1
+            ? 'BOOKED'
+            : status === -1 || restBooking.paymentStatus === 'canceled'
+              ? 'CANCELED'
+              : restBooking.paymentStatus === 'refunded' ||
+                  restBooking.paymentStatus === 'conflict_refund_needed'
+                ? 'REFUNDED'
+                : 'PENDING';
+
         return {
           ...restBooking,
-          status: status === 1 ? 'BOOKED' : 'PENDING',
+          status: formattedStatus,
           standId: stand.id,
           standNumber: stand.standNumber,
           standTitle: stand.title,

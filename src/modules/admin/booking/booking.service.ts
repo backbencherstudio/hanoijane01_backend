@@ -1,8 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from 'prisma/generated/client';
-import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
 import {
   GetBookingStatsQueryDto,
   GetBookingsQueryDto,
@@ -20,7 +18,7 @@ export class BookingService {
     };
     const bookingWhere: Prisma.BookingWhereInput = {
       deletedAt: null,
-      status: 0,
+      status: -1,
     };
 
     if (exhibitionId) {
@@ -80,14 +78,12 @@ export class BookingService {
       const statusLower = status.toLowerCase();
       if (statusLower === 'booked') {
         where.status = 1;
-        where.paymentStatus = 'paid';
       } else if (statusLower === 'pending') {
-        where.status = 1;
-        where.paymentStatus = { in: ['unpaid', 'pending'] };
+        where.status = 0;
       } else if (statusLower === 'canceled') {
         where.OR = [
-          { status: 0 },
-          { paymentStatus: { in: ['refunded', 'failed'] } },
+          { status: -1 },
+          { paymentStatus: { in: ['refunded', 'failed', 'canceled'] } },
         ];
       }
     }
@@ -153,12 +149,14 @@ export class BookingService {
       // Determine mapped status string
       let bookingStatus = 'pending';
       if (
-        booking.status === 0 ||
-        ['refunded', 'failed'].includes(booking.paymentStatus || '')
+        booking.status === -1 ||
+        ['refunded', 'failed', 'canceled'].includes(booking.paymentStatus || '')
       ) {
         bookingStatus = 'canceled';
-      } else if (booking.status === 1 && booking.paymentStatus === 'paid') {
+      } else if (booking.status === 1 || booking.paymentStatus === 'paid') {
         bookingStatus = 'booked';
+      } else if (booking.status === 0) {
+        bookingStatus = 'pending';
       }
 
       // Format stand category (category title) and hall (hall title)
@@ -237,12 +235,14 @@ export class BookingService {
     // Map booking type
     let bookingType = 'pending';
     if (
-      booking.status === 0 ||
-      ['refunded', 'failed'].includes(booking.paymentStatus || '')
+      booking.status === -1 ||
+      ['refunded', 'failed', 'canceled'].includes(booking.paymentStatus || '')
     ) {
       bookingType = 'canceled';
-    } else if (booking.status === 1 && booking.paymentStatus === 'paid') {
+    } else if (booking.status === 1 || booking.paymentStatus === 'paid') {
       bookingType = 'booked';
+    } else if (booking.status === 0) {
+      bookingType = 'pending';
     }
 
     const data = {

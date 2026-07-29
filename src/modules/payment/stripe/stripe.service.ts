@@ -53,6 +53,15 @@ export class StripeService {
 
     // 1. Strict Stand Availability Check
     if (stand && stand.isAvailable === 0) {
+      if (booking.paymentStatus === 'unpaid') {
+        await this.prisma.booking.update({
+          where: { id: booking.id },
+          data: {
+            paymentStatus: 'canceled',
+            status: -1,
+          },
+        });
+      }
       throw new BadRequestException(
         'The stand associated with this booking has already been claimed by another user. Please select an available stand.',
       );
@@ -141,6 +150,15 @@ export class StripeService {
 
     // Strict Stand Availability Check
     if (stand && stand.isAvailable === 0) {
+      if (booking.paymentStatus === 'unpaid') {
+        await this.prisma.booking.update({
+          where: { id: booking.id },
+          data: {
+            paymentStatus: 'canceled',
+            status: -1,
+          },
+        });
+      }
       throw new BadRequestException(
         'The stand associated with this booking has already been claimed by another user. Please select an available stand.',
       );

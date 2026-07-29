@@ -157,7 +157,7 @@ export class TransactionRepository {
           where: { id: bookingId },
           data: {
             paymentStatus: 'conflict_refund_needed',
-            status: 0,
+            status: -1,
             stripePaymentIntentId:
               paymentIntentId || booking.stripePaymentIntentId,
             stripeCheckoutSessionId:
@@ -176,8 +176,8 @@ export class TransactionRepository {
         paymentStatus,
         status: isPaid
           ? 1
-          : isFailedOrCanceled && paymentStatus === 'canceled'
-            ? 0
+          : isFailedOrCanceled
+            ? -1
             : booking.status,
         stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
         stripeCheckoutSessionId:
@@ -187,7 +187,7 @@ export class TransactionRepository {
       },
     });
 
-    // 2. Update Stand availability if applicable
+    // 2. Update Stand availability and cancel all other pending/unpaid bookings for this stand
     if (booking.standId) {
       await this.prisma.stand.update({
         where: { id: booking.standId },
@@ -199,6 +199,20 @@ export class TransactionRepository {
               : (booking.stand?.isAvailable ?? 1),
         },
       });
+
+      if (isPaid) {
+        await this.prisma.booking.updateMany({
+          where: {
+            standId: booking.standId,
+            id: { not: bookingId },
+            paymentStatus: 'unpaid',
+          },
+          data: {
+            paymentStatus: 'canceled',
+            status: -1,
+          },
+        });
+      }
     }
 
     // 3. Upsert PaymentTransaction record for ledger

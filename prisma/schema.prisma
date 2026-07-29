@@ -286,7 +286,7 @@ model Booking {
   updatedAt DateTime  @default(now()) @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  status Int @default(1) @db.SmallInt // 1 = booked, 0 = not booked
+  status Int @default(0) @db.SmallInt // 0 = pending, 1 = booked, -1 = canceled
 
   userName       String? @map("user_name")
   companyName    String? @map("company_name")
