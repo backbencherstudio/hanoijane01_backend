@@ -25,7 +25,11 @@ export class ExhibitionService {
       data: {
         title: dto.title,
         startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
+        endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
         location: dto.location,
+        bookingStatedAt: dto.bookingStatedAt
+          ? new Date(dto.bookingStatedAt)
+          : undefined,
         bookingEndedAt: dto.bookingEndedAt
           ? new Date(dto.bookingEndedAt)
           : undefined,

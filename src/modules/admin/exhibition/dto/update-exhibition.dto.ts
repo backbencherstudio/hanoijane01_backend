@@ -20,6 +20,13 @@ export class UpdateLatestExhibitionDto {
   @IsOptional()
   @IsDateString()
   startedAt?: string;
+  @ApiPropertyOptional({
+    example: '2027-02-06T00:00:00.000Z',
+    description: 'Event End Date',
+  })
+  @IsOptional()
+  @IsDateString()
+  endedAt?: string;
 
   @ApiPropertyOptional({
     example: 'Europe/London (GMT+1)',
@@ -28,6 +35,14 @@ export class UpdateLatestExhibitionDto {
   @IsOptional()
   @IsString()
   location?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-12-06T00:00:00.000Z',
+    description: 'Booking Started At',
+  })
+  @IsOptional()
+  @IsDateString()
+  bookingStatedAt?: string;
 
   @ApiPropertyOptional({
     example: '2026-12-06T00:00:00.000Z',
