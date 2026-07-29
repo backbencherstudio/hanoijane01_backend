@@ -53,18 +53,4 @@ export class OverviewController {
   async getStandVsHallChart(@Query() queryDto: QueryOverviewDto) {
     return this.overviewService.getStandVsHallChart(queryDto.exhibitionId);
   }
-
-  @ApiOperation({
-    summary: 'Get admin overview statistics (alias endpoint)',
-    description: 'Alias route for retrieving overview statistics.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: OverviewStatsResponseDto,
-    description: 'Overview statistics retrieved successfully',
-  })
-  @Get()
-  async getOverview(@Query() queryDto: QueryOverviewDto) {
-    return this.overviewService.getStats(queryDto.exhibitionId);
-  }
 }

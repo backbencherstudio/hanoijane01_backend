@@ -116,11 +116,8 @@ export class OverviewService {
         hallId: hall.id,
         hallTitle: hall.title ?? 'Unnamed Hall',
         totalStands,
-        totalSeats: totalStands,
         bookedStands,
-        booked: bookedStands,
         availableStands,
-        available: availableStands,
       };
     });
 
