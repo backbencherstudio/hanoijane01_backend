@@ -62,7 +62,6 @@ export class TransactionService {
         standId: t.booking?.stand?.id,
         standTitle: t.booking?.stand?.title,
         standNumber: t.booking?.stand?.standNumber,
-        standSlug: null,
       })),
       meta_data: {
         totalItems: total,
