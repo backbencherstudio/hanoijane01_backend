@@ -191,6 +191,12 @@ export class BookingService {
       message: 'Booking created successfully',
       data: {
         ...restBooking,
+        status:
+          restBooking.status === 1
+            ? 'BOOKED'
+            : restBooking.status === -1 || restBooking.paymentStatus === 'canceled'
+              ? 'CANCELED'
+              : 'PENDING',
         stand: {
           ...restStand,
           category: category.title ?? null,
@@ -266,19 +272,22 @@ export class BookingService {
       message: 'Bookings retrieved successfully',
       data: bookings.map((booking) => {
         const { stand, status, ...restBooking } = booking;
+        const formattedPaymentStatus = (
+          restBooking.paymentStatus || 'UNPAID'
+        ).toUpperCase();
+
         const formattedStatus =
           status === 1
             ? 'BOOKED'
-            : status === -1 || restBooking.paymentStatus === 'canceled'
+            : status === -1 ||
+                ['CANCELED', 'REFUNDED', 'FAILED'].includes(formattedPaymentStatus)
               ? 'CANCELED'
-              : restBooking.paymentStatus === 'refunded' ||
-                  restBooking.paymentStatus === 'conflict_refund_needed'
-                ? 'REFUNDED'
-                : 'PENDING';
+              : 'PENDING';
 
         return {
           ...restBooking,
           status: formattedStatus,
+          paymentStatus: formattedPaymentStatus,
           standId: stand.id,
           standNumber: stand.standNumber,
           standTitle: stand.title,

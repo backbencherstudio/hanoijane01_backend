@@ -18,7 +18,6 @@ export class BookingService {
     };
     const bookingWhere: Prisma.BookingWhereInput = {
       deletedAt: null,
-      status: -1,
     };
 
     if (exhibitionId) {
@@ -43,9 +42,15 @@ export class BookingService {
           isAvailable: 0,
         },
       }),
-      // Canceled bookings: booking status = 0
+      // Canceled bookings: booking status = -1 or canceled/refunded/failed
       this.prisma.booking.count({
-        where: bookingWhere,
+        where: {
+          ...bookingWhere,
+          OR: [
+            { status: -1 },
+            { paymentStatus: { in: ['canceled', 'refunded', 'failed'] } },
+          ],
+        },
       }),
     ]);
 
@@ -147,16 +152,21 @@ export class BookingService {
 
     const items = bookings.map((booking) => {
       // Determine mapped status string
-      let bookingStatus = 'pending';
+      let bookingStatus = 'PENDING';
       if (
-        booking.status === -1 ||
-        ['refunded', 'failed', 'canceled'].includes(booking.paymentStatus || '')
+        booking.paymentStatus === 'refunded' ||
+        booking.paymentStatus === 'conflict_refund_needed'
       ) {
-        bookingStatus = 'canceled';
+        bookingStatus = 'REFUNDED';
+      } else if (
+        booking.status === -1 ||
+        ['failed', 'canceled'].includes(booking.paymentStatus || '')
+      ) {
+        bookingStatus = 'CANCELED';
       } else if (booking.status === 1 || booking.paymentStatus === 'paid') {
-        bookingStatus = 'booked';
+        bookingStatus = 'BOOKED';
       } else if (booking.status === 0) {
-        bookingStatus = 'pending';
+        bookingStatus = 'PENDING';
       }
 
       // Format stand category (category title) and hall (hall title)
@@ -181,6 +191,10 @@ export class BookingService {
           ? String(standNumRaw).padStart(2, '0')
           : null;
 
+      const formattedPaymentStatus = (
+        booking.paymentStatus || 'UNPAID'
+      ).toUpperCase();
+
       return {
         id: booking.id,
         standNumber,
@@ -189,6 +203,7 @@ export class BookingService {
         exhibitor,
         pricePerDay,
         status: bookingStatus,
+        paymentStatus: formattedPaymentStatus,
         bookingDate: booking.createdAt,
       };
     });
@@ -233,20 +248,26 @@ export class BookingService {
     }
 
     // Map booking type
-    let bookingType = 'pending';
+    let bookingType = 'PENDING';
     if (
-      booking.status === -1 ||
-      ['refunded', 'failed', 'canceled'].includes(booking.paymentStatus || '')
+      booking.paymentStatus === 'refunded' ||
+      booking.paymentStatus === 'conflict_refund_needed'
     ) {
-      bookingType = 'canceled';
+      bookingType = 'REFUNDED';
+    } else if (
+      booking.status === -1 ||
+      ['failed', 'canceled'].includes(booking.paymentStatus || '')
+    ) {
+      bookingType = 'CANCELED';
     } else if (booking.status === 1 || booking.paymentStatus === 'paid') {
-      bookingType = 'booked';
+      bookingType = 'BOOKED';
     } else if (booking.status === 0) {
-      bookingType = 'pending';
+      bookingType = 'PENDING';
     }
 
     const data = {
       id: booking.id,
+      status: bookingType,
       bookingType,
       standNumber: booking.stand?.standNumber
         ? String(booking.stand.standNumber).padStart(2, '0')
@@ -259,7 +280,7 @@ export class BookingService {
       contactName: booking.userName || booking.user?.name || null,
       email: booking.email || booking.user?.email || null,
       bookingDate: booking.createdAt,
-      paymentStatus: booking.paymentStatus || 'unpaid',
+      paymentStatus: (booking.paymentStatus || 'UNPAID').toUpperCase(),
       subTotalAmount: Number(booking.subTotalAmount),
       discountAmount: Number(booking.discountAmount),
       vatAmount: Number(booking.vatAmount),
