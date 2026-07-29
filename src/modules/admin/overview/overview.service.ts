@@ -66,60 +66,29 @@ export class OverviewService {
   }
 
   async getStandVsHallChart(exhibitionId?: string) {
-    const hallWhere: Prisma.HallWhereInput = {
-      deletedAt: null,
-    };
-
-    if (exhibitionId) {
-      hallWhere.exhibitionId = exhibitionId;
-    }
-
-    const halls = await this.prisma.hall.findMany({
-      where: hallWhere,
-      select: {
-        id: true,
-        title: true,
-        exhibitionId: true,
-        standCategories: {
-          where: { deletedAt: null },
-          select: {
-            stands: {
-              where: { deletedAt: null },
-              select: {
-                id: true,
-                isAvailable: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    const chartData = halls.map((hall) => {
-      let totalStands = 0;
-      let bookedStands = 0;
-      let availableStands = 0;
-
-      hall.standCategories.forEach((category) => {
-        category.stands.forEach((stand) => {
-          totalStands += 1;
-          if (stand.isAvailable === 0) {
-            bookedStands += 1;
-          } else {
-            availableStands += 1;
-          }
-        });
-      });
-
-      return {
-        hallId: hall.id,
-        hallTitle: hall.title ?? 'Unnamed Hall',
-        totalStands,
-        bookedStands,
-        availableStands,
-      };
-    });
+    const chartData = await this.prisma.$queryRaw<
+      {
+        hallId: string;
+        hallTitle: string;
+        totalStands: number;
+        bookedStands: number;
+        availableStands: number;
+      }[]
+    >`
+      SELECT 
+        h.id AS "hallId",
+        COALESCE(h.title, 'Unnamed Hall') AS "hallTitle",
+        COUNT(s.id)::int AS "totalStands",
+        COUNT(CASE WHEN s.is_available = 0 THEN 1 END)::int AS "bookedStands",
+        COUNT(CASE WHEN s.is_available = 1 THEN 1 END)::int AS "availableStands"
+      FROM halls h
+      LEFT JOIN stand_categories sc ON sc.hall_id = h.id AND sc.deleted_at IS NULL
+      LEFT JOIN stands s ON s.category_id = sc.id AND s.deleted_at IS NULL
+      WHERE h.deleted_at IS NULL
+        ${exhibitionId ? Prisma.sql`AND h.exhibition_id = ${exhibitionId}` : Prisma.empty}
+      GROUP BY h.id, h.title, h.created_at
+      ORDER BY h.created_at ASC
+    `;
 
     return {
       success: true,
