@@ -71,12 +71,47 @@ export class StripeService {
     const amount =
       Number(booking.totalAmount) ||
       (stand?.category?.price ? Number(stand.category.price) : 0);
-    const currency = (booking.currency || 'usd').toLowerCase();
+    const currency = (booking.currency || 'eur').toLowerCase();
 
     if (amount <= 0) {
       throw new BadRequestException(
         'Booking pricing is invalid or 0. Cannot create checkout session.',
       );
+    }
+
+    // Reuse existing open & valid Checkout Session if price and currency match and session is unexpired
+    if (booking.stripeCheckoutSessionId) {
+      try {
+        const existingSession = await StripePayment.getCheckoutSession(
+          booking.stripeCheckoutSessionId,
+        );
+        const expectedAmountCents = Math.round(amount * 100);
+        const isNotExpired =
+          !existingSession.expires_at ||
+          existingSession.expires_at * 1000 > Date.now();
+
+        if (
+          existingSession.status === 'open' &&
+          isNotExpired &&
+          existingSession.amount_total === expectedAmountCents &&
+          existingSession.currency?.toLowerCase() === currency
+        ) {
+          this.logger.log(
+            `Reusing existing active Checkout Session ${existingSession.id} for Booking ${booking.id}`,
+          );
+          return {
+            sessionId: existingSession.id,
+            checkoutUrl: existingSession.url || '',
+            bookingId: booking.id,
+            amount,
+            currency,
+          };
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Could not retrieve existing Checkout Session ${booking.stripeCheckoutSessionId}: ${err.message}. Creating a new one.`,
+        );
+      }
     }
 
     const customerEmail = booking.email || undefined;
@@ -167,7 +202,43 @@ export class StripeService {
     const amount =
       Number(booking.totalAmount) ||
       (stand?.category?.price ? Number(stand.category.price) : 0);
-    const currency = (booking.currency || 'usd').toLowerCase();
+    const currency = (booking.currency || 'eur').toLowerCase();
+
+    // Reuse existing active Payment Intent if price and currency match
+    if (booking.stripePaymentIntentId) {
+      try {
+        const existingIntent = await StripePayment.getPaymentIntent(
+          booking.stripePaymentIntentId,
+        );
+        const expectedAmountCents = Math.round(amount * 100);
+        const isActiveStatus = [
+          'requires_payment_method',
+          'requires_confirmation',
+          'requires_action',
+        ].includes(existingIntent.status);
+
+        if (
+          isActiveStatus &&
+          existingIntent.amount === expectedAmountCents &&
+          existingIntent.currency?.toLowerCase() === currency
+        ) {
+          this.logger.log(
+            `Reusing existing active PaymentIntent ${existingIntent.id} for Booking ${booking.id}`,
+          );
+          return {
+            paymentIntentId: existingIntent.id,
+            clientSecret: existingIntent.client_secret || '',
+            bookingId: booking.id,
+            amount,
+            currency,
+          };
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Could not retrieve existing PaymentIntent ${booking.stripePaymentIntentId}: ${err.message}. Creating a new one.`,
+        );
+      }
+    }
 
     const intent = await StripePayment.createPaymentIntent({
       amount,
@@ -223,7 +294,7 @@ export class StripeService {
         : session.customer?.id;
 
     const amountTotal = session.amount_total ? session.amount_total / 100 : 0;
-    const currency = session.currency || 'usd';
+    const currency = session.currency || 'eur';
 
     if (bookingId) {
       const syncResult: any =
@@ -457,7 +528,7 @@ export class StripeService {
                 amount: session.amount_total
                   ? session.amount_total / 100
                   : Number(booking.totalAmount),
-                currency: session.currency || booking.currency || 'usd',
+                currency: session.currency || booking.currency || 'eur',
                 rawStatus: session.payment_status,
               });
 
@@ -548,7 +619,7 @@ export class StripeService {
           amount: session.amount_total
             ? session.amount_total / 100
             : Number(booking.totalAmount),
-          currency: session.currency || booking.currency || 'usd',
+          currency: session.currency || booking.currency || 'eur',
           rawStatus: session.payment_status,
         });
 

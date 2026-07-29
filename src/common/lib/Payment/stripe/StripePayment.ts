@@ -171,7 +171,7 @@ export class StripePayment {
     userId,
     title,
     amount,
-    currency = 'usd',
+    currency = 'eur',
     customerEmail,
     successUrl,
     cancelUrl,

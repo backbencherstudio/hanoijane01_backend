@@ -257,13 +257,13 @@ export class TransactionRepository {
           bookingId: bookingId,
           userId: booking.userId,
           amount: amount !== undefined ? amount : Number(booking.totalAmount),
-          currency: currency || booking.currency || 'usd',
+          currency: currency || booking.currency || 'eur',
           paidAmount: isPaid
             ? amount !== undefined
               ? amount
               : Number(booking.totalAmount)
             : 0,
-          paidCurrency: currency || booking.currency || 'usd',
+          paidCurrency: currency || booking.currency || 'eur',
           provider: 'stripe',
           referenceNumber: paymentIntentId || checkoutSessionId || bookingId,
           status: txStatus,
