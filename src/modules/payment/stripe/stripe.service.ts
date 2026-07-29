@@ -23,26 +23,16 @@ export class StripeService {
   ) {}
 
   /**
-   * Verify and construct raw webhook payload into Stripe Event
+   * Private Helper: Validates booking existence, payment status, and stand availability.
    */
-  handleWebhook(rawBody: string, sig: string | string[]) {
-    return StripePayment.handleWebhook(rawBody, sig);
-  }
-
-  /**
-   * Pre-validates stand availability via booking record and generates Stripe Hosted Checkout Session
-   */
-  async createBookingCheckoutSession(
-    dto: CreateBookingCheckoutDto,
-    userId?: string,
-  ) {
+  private async validateBookingForPayment(bookingId: string) {
     const booking = await this.prisma.booking.findUnique({
-      where: { id: dto.bookingId },
+      where: { id: bookingId },
       include: { stand: { include: { category: true } } },
     });
 
     if (!booking) {
-      throw new NotFoundException(`Booking with ID ${dto.bookingId} not found`);
+      throw new NotFoundException(`Booking with ID ${bookingId} not found`);
     }
 
     if (booking.paymentStatus === 'paid') {
@@ -51,7 +41,7 @@ export class StripeService {
 
     const stand = booking.stand;
 
-    // 1. Strict Stand Availability Check
+    // Strict Stand Availability Check
     if (stand && stand.isAvailable === 0) {
       if (booking.paymentStatus === 'unpaid') {
         await this.prisma.booking.update({
@@ -67,7 +57,6 @@ export class StripeService {
       );
     }
 
-    // Determine amount and currency directly from booking
     const amount =
       Number(booking.totalAmount) ||
       (stand?.category?.price ? Number(stand.category.price) : 0);
@@ -78,6 +67,75 @@ export class StripeService {
         'Booking pricing is invalid or 0. Cannot create checkout session.',
       );
     }
+
+    return { booking, stand, amount, currency };
+  }
+
+  /**
+   * Private Helper: Executes payment sync and auto-refunds in case of concurrency conflict.
+   */
+  private async syncAndCheckConflict(params: {
+    bookingId: string;
+    paymentStatus:
+      | 'paid'
+      | 'failed'
+      | 'canceled'
+      | 'refunded'
+      | 'unpaid'
+      | 'conflict_refund_needed';
+    paymentIntentId?: string;
+    checkoutSessionId?: string;
+    customerId?: string;
+    amount?: number;
+    currency?: string;
+    receiptUrl?: string;
+    rawStatus?: string;
+  }) {
+    const syncResult: any =
+      await this.transactionRepository.syncBookingPayment(params);
+
+    if (syncResult?.conflict && params.paymentIntentId) {
+      this.logger.warn(
+        `Initiating Stripe Auto-Refund for PaymentIntent ${params.paymentIntentId} due to stand conflict!`,
+      );
+      try {
+        await StripePayment.refundPaymentIntent(
+          params.paymentIntentId,
+          'Stand was already booked by another user first.',
+        );
+        return await this.transactionRepository.syncBookingPayment({
+          bookingId: params.bookingId,
+          paymentStatus: 'refunded',
+          paymentIntentId: params.paymentIntentId,
+          checkoutSessionId: params.checkoutSessionId,
+          rawStatus: 'stand_conflict_auto_refunded',
+        });
+      } catch (err) {
+        this.logger.error(
+          `Failed to issue Stripe auto-refund: ${err.message}`,
+        );
+      }
+    }
+
+    return syncResult;
+  }
+
+  /**
+   * Verify and construct raw webhook payload into Stripe Event
+   */
+  handleWebhook(rawBody: string, sig: string | string[]) {
+    return StripePayment.handleWebhook(rawBody, sig);
+  }
+
+  /**
+   * Pre-validates stand availability via booking record and generates Stripe Hosted Checkout Session
+   */
+  async createBookingCheckoutSession(
+    dto: CreateBookingCheckoutDto,
+    userId?: string,
+  ) {
+    const { booking, stand, amount, currency } =
+      await this.validateBookingForPayment(dto.bookingId);
 
     // Reuse existing open & valid Checkout Session if price and currency match and session is unexpired
     if (booking.stripeCheckoutSessionId) {
@@ -168,41 +226,8 @@ export class StripeService {
     dto: CreatePaymentIntentDto,
     userId?: string,
   ) {
-    const booking = await this.prisma.booking.findUnique({
-      where: { id: dto.bookingId },
-      include: { stand: { include: { category: true } } },
-    });
-
-    if (!booking) {
-      throw new NotFoundException(`Booking with ID ${dto.bookingId} not found`);
-    }
-
-    if (booking.paymentStatus === 'paid') {
-      throw new BadRequestException('This booking has already been paid for.');
-    }
-
-    const stand = booking.stand;
-
-    // Strict Stand Availability Check
-    if (stand && stand.isAvailable === 0) {
-      if (booking.paymentStatus === 'unpaid') {
-        await this.prisma.booking.update({
-          where: { id: booking.id },
-          data: {
-            paymentStatus: 'canceled',
-            status: -1,
-          },
-        });
-      }
-      throw new BadRequestException(
-        'The stand associated with this booking has already been claimed by another user. Please select an available stand.',
-      );
-    }
-
-    const amount =
-      Number(booking.totalAmount) ||
-      (stand?.category?.price ? Number(stand.category.price) : 0);
-    const currency = (booking.currency || 'eur').toLowerCase();
+    const { booking, amount, currency } =
+      await this.validateBookingForPayment(dto.bookingId);
 
     // Reuse existing active Payment Intent if price and currency match
     if (booking.stripePaymentIntentId) {
@@ -297,41 +322,16 @@ export class StripeService {
     const currency = session.currency || 'eur';
 
     if (bookingId) {
-      const syncResult: any =
-        await this.transactionRepository.syncBookingPayment({
-          bookingId,
-          paymentStatus: 'paid',
-          checkoutSessionId: session.id,
-          paymentIntentId,
-          customerId,
-          amount: amountTotal,
-          currency,
-          rawStatus: session.payment_status,
-        });
-
-      // Handle Stand Concurrency Conflict Auto-Refund
-      if (syncResult?.conflict && paymentIntentId) {
-        this.logger.warn(
-          `Initiating Stripe Auto-Refund for PaymentIntent ${paymentIntentId} due to stand conflict!`,
-        );
-        try {
-          await StripePayment.refundPaymentIntent(
-            paymentIntentId,
-            'Stand was already booked by another user first.',
-          );
-          await this.transactionRepository.syncBookingPayment({
-            bookingId,
-            paymentStatus: 'refunded',
-            paymentIntentId,
-            checkoutSessionId: session.id,
-            rawStatus: 'stand_conflict_auto_refunded',
-          });
-        } catch (err) {
-          this.logger.error(
-            `Failed to issue Stripe auto-refund: ${err.message}`,
-          );
-        }
-      }
+      await this.syncAndCheckConflict({
+        bookingId,
+        paymentStatus: 'paid',
+        checkoutSessionId: session.id,
+        paymentIntentId,
+        customerId,
+        amount: amountTotal,
+        currency,
+        rawStatus: session.payment_status,
+      });
     }
   }
 
@@ -367,39 +367,16 @@ export class StripeService {
     const amount = paymentIntent.amount ? paymentIntent.amount / 100 : 0;
 
     if (bookingId) {
-      const syncResult: any =
-        await this.transactionRepository.syncBookingPayment({
-          bookingId,
-          paymentStatus: 'paid',
-          paymentIntentId: paymentIntent.id,
-          customerId,
-          amount,
-          currency: paymentIntent.currency,
-          receiptUrl,
-          rawStatus: paymentIntent.status,
-        });
-
-      if (syncResult?.conflict) {
-        this.logger.warn(
-          `Initiating Stripe Auto-Refund for PaymentIntent ${paymentIntent.id}`,
-        );
-        try {
-          await StripePayment.refundPaymentIntent(
-            paymentIntent.id,
-            'Stand was already booked by another user first.',
-          );
-          await this.transactionRepository.syncBookingPayment({
-            bookingId,
-            paymentStatus: 'refunded',
-            paymentIntentId: paymentIntent.id,
-            rawStatus: 'stand_conflict_auto_refunded',
-          });
-        } catch (err) {
-          this.logger.error(
-            `Failed to issue Stripe auto-refund: ${err.message}`,
-          );
-        }
-      }
+      await this.syncAndCheckConflict({
+        bookingId,
+        paymentStatus: 'paid',
+        paymentIntentId: paymentIntent.id,
+        customerId,
+        amount,
+        currency: paymentIntent.currency,
+        receiptUrl,
+        rawStatus: paymentIntent.status,
+      });
     }
   }
 
@@ -518,43 +495,18 @@ export class StripeService {
                 ? session.customer
                 : session.customer?.id;
 
-            const syncResult: any =
-              await this.transactionRepository.syncBookingPayment({
-                bookingId: booking.id,
-                paymentStatus: 'paid',
-                checkoutSessionId: session.id,
-                paymentIntentId,
-                customerId,
-                amount: session.amount_total
-                  ? session.amount_total / 100
-                  : Number(booking.totalAmount),
-                currency: session.currency || booking.currency || 'eur',
-                rawStatus: session.payment_status,
-              });
-
-            // Handle Stand Concurrency Conflict Auto-Refund during Reconciliation
-            if (syncResult?.conflict && paymentIntentId) {
-              this.logger.warn(
-                `Initiating Stripe Auto-Refund for PaymentIntent ${paymentIntentId} during reconciliation due to stand conflict!`,
-              );
-              try {
-                await StripePayment.refundPaymentIntent(
-                  paymentIntentId,
-                  'Stand was already booked by another user first.',
-                );
-                await this.transactionRepository.syncBookingPayment({
-                  bookingId: booking.id,
-                  paymentStatus: 'refunded',
-                  paymentIntentId,
-                  checkoutSessionId: session.id,
-                  rawStatus: 'stand_conflict_auto_refunded',
-                });
-              } catch (err) {
-                this.logger.error(
-                  `Failed to issue Stripe auto-refund during reconciliation: ${err.message}`,
-                );
-              }
-            }
+            await this.syncAndCheckConflict({
+              bookingId: booking.id,
+              paymentStatus: 'paid',
+              checkoutSessionId: session.id,
+              paymentIntentId,
+              customerId,
+              amount: session.amount_total
+                ? session.amount_total / 100
+                : Number(booking.totalAmount),
+              currency: session.currency || booking.currency || 'eur',
+              rawStatus: session.payment_status,
+            });
 
             syncedCount++;
           } else if (session.status === 'expired') {
@@ -563,6 +515,39 @@ export class StripeService {
               paymentStatus: 'canceled',
               checkoutSessionId: session.id,
               rawStatus: 'expired',
+            });
+            canceledCount++;
+          }
+        } else if (booking.stripePaymentIntentId) {
+          const intent = await StripePayment.getPaymentIntent(
+            booking.stripePaymentIntentId,
+          );
+
+          if (intent.status === 'succeeded') {
+            const customerId =
+              typeof intent.customer === 'string'
+                ? intent.customer
+                : intent.customer?.id;
+
+            await this.syncAndCheckConflict({
+              bookingId: booking.id,
+              paymentStatus: 'paid',
+              paymentIntentId: intent.id,
+              customerId,
+              amount: intent.amount
+                ? intent.amount / 100
+                : Number(booking.totalAmount),
+              currency: intent.currency || booking.currency || 'eur',
+              rawStatus: intent.status,
+            });
+
+            syncedCount++;
+          } else if (intent.status === 'canceled') {
+            await this.transactionRepository.syncBookingPayment({
+              bookingId: booking.id,
+              paymentStatus: 'canceled',
+              paymentIntentId: intent.id,
+              rawStatus: 'canceled',
             });
             canceledCount++;
           }
@@ -609,44 +594,45 @@ export class StripeService {
           ? 'canceled'
           : booking.paymentStatus;
 
-      const syncResult: any =
-        await this.transactionRepository.syncBookingPayment({
-          bookingId: booking.id,
-          paymentStatus: status,
-          checkoutSessionId: session.id,
-          paymentIntentId,
-          customerId,
-          amount: session.amount_total
-            ? session.amount_total / 100
-            : Number(booking.totalAmount),
-          currency: session.currency || booking.currency || 'eur',
-          rawStatus: session.payment_status,
-        });
+      return await this.syncAndCheckConflict({
+        bookingId: booking.id,
+        paymentStatus: status,
+        checkoutSessionId: session.id,
+        paymentIntentId,
+        customerId,
+        amount: session.amount_total
+          ? session.amount_total / 100
+          : Number(booking.totalAmount),
+        currency: session.currency || booking.currency || 'eur',
+        rawStatus: session.payment_status,
+      });
+    } else if (booking.stripePaymentIntentId) {
+      const intent = await StripePayment.getPaymentIntent(
+        booking.stripePaymentIntentId,
+      );
+      const customerId =
+        typeof intent.customer === 'string'
+          ? intent.customer
+          : intent.customer?.id;
 
-      if (syncResult?.conflict && paymentIntentId) {
-        this.logger.warn(
-          `Initiating Stripe Auto-Refund for PaymentIntent ${paymentIntentId} during manual sync due to stand conflict!`,
-        );
-        try {
-          await StripePayment.refundPaymentIntent(
-            paymentIntentId,
-            'Stand was already booked by another user first.',
-          );
-          return await this.transactionRepository.syncBookingPayment({
-            bookingId: booking.id,
-            paymentStatus: 'refunded',
-            paymentIntentId,
-            checkoutSessionId: session.id,
-            rawStatus: 'stand_conflict_auto_refunded',
-          });
-        } catch (err) {
-          this.logger.error(
-            `Failed to issue Stripe auto-refund during manual sync: ${err.message}`,
-          );
-        }
-      }
+      const isPaid = intent.status === 'succeeded';
+      const status: any = isPaid
+        ? 'paid'
+        : intent.status === 'canceled'
+          ? 'canceled'
+          : booking.paymentStatus;
 
-      return syncResult;
+      return await this.syncAndCheckConflict({
+        bookingId: booking.id,
+        paymentStatus: status,
+        paymentIntentId: intent.id,
+        customerId,
+        amount: intent.amount
+          ? intent.amount / 100
+          : Number(booking.totalAmount),
+        currency: intent.currency || booking.currency || 'eur',
+        rawStatus: intent.status,
+      });
     }
 
     return booking;
