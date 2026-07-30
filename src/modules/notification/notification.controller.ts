@@ -6,6 +6,7 @@ import {
   Patch,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import {
@@ -21,6 +22,7 @@ import {
   NotificationActionResponse,
   NotificationListResponse,
 } from './dto/response-notification.dto';
+import { QueryNotificationDto } from './dto/query-notification.dto';
 
 @ApiBearerAuth()
 @ApiTags('Notification')
@@ -30,19 +32,19 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @ApiOperation({
-    summary: 'Get all notifications',
+    summary: 'Get all notifications with pagination',
     description:
-      'Fetches all notifications stored in the database. Returns user-specific notifications and system-wide notifications for admins.',
+      'Fetches notifications stored in the database with search and pagination support. Returns user-specific notifications and system-wide notifications for admins.',
   })
   @ApiResponse({
     status: 200,
     type: NotificationListResponse,
-    description: 'List of all notifications',
+    description: 'Paginated list of notifications',
   })
   @Get()
-  async findAll(@Req() req: Request) {
+  async findAll(@Req() req: Request, @Query() query: QueryNotificationDto) {
     const user_id = req.user.id;
-    return this.notificationService.findAll(user_id);
+    return this.notificationService.findAll(user_id, query);
   }
 
   @ApiOperation({

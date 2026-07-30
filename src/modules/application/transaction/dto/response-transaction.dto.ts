@@ -38,6 +38,23 @@ export class AppTransactionItemDto {
   standSlug?: string | null;
 }
 
+export class TransactionPaginationMetaDto {
+  @ApiProperty({ example: 100 })
+  totalItems: number;
+
+  @ApiProperty({ example: 10 })
+  itemCount: number;
+
+  @ApiProperty({ example: 10 })
+  itemsPerPage: number;
+
+  @ApiProperty({ example: 1 })
+  totalPages: number;
+
+  @ApiProperty({ example: 1 })
+  currentPage: number;
+}
+
 export class ResponseTransactionListDto {
   @ApiProperty({ example: true })
   success: boolean;
@@ -47,4 +64,7 @@ export class ResponseTransactionListDto {
 
   @ApiProperty({ type: [AppTransactionItemDto] })
   data: AppTransactionItemDto[];
+
+  @ApiProperty({ type: [TransactionPaginationMetaDto] })
+  metaData: TransactionPaginationMetaDto;
 }

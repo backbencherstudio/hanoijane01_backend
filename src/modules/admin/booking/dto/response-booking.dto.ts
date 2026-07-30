@@ -219,7 +219,7 @@ export class AdminBookingListResponseDataDto {
   items: AdminBookingHistoryItemDto[];
 
   @ApiProperty({ type: AdminBookingPaginationMetaDto })
-  meta: AdminBookingPaginationMetaDto;
+  metaData: AdminBookingPaginationMetaDto;
 }
 
 export class AdminBookingListPaginatedResponseDto {

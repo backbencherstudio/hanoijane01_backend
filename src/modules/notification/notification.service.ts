@@ -5,6 +5,7 @@ import { Role } from '../../common/guard/role/role.enum';
 import { Prisma } from 'prisma/generated/client';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { QueryNotificationDto } from './dto/query-notification.dto';
 
 @Injectable()
 export class NotificationService {
@@ -14,7 +15,12 @@ export class NotificationService {
   ) {}
 
   // Database operations
-  async findAll(user_id: string) {
+  async findAll(user_id: string, query: QueryNotificationDto = {}) {
+    const { search, page = 1, limit = 10 } = query;
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
     const userDetails = await this.userRepository.getUserDetails(user_id);
     const where_condition: Prisma.NotificationWhereInput = {};
 
@@ -24,22 +30,36 @@ export class NotificationService {
       where_condition.receiverId = user_id;
     }
 
-    const notifications = await this.prisma.notification.findMany({
-      where: where_condition,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        readAt: true,
-        createdAt: true,
-        notificationEvent: {
-          select: {
-            id: true,
-            type: true,
-            text: true,
+    if (search) {
+      where_condition.notificationEvent = {
+        OR: [
+          { type: { contains: search, mode: 'insensitive' } },
+          { text: { contains: search, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    const [totalItems, notifications] = await Promise.all([
+      this.prisma.notification.count({ where: where_condition }),
+      this.prisma.notification.findMany({
+        where: where_condition,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          readAt: true,
+          createdAt: true,
+          notificationEvent: {
+            select: {
+              id: true,
+              type: true,
+              text: true,
+            },
           },
         },
-      },
-    });
+      }),
+    ]);
 
     const formattedNotifications = notifications.map((notification) => {
       const rawType = notification.notificationEvent?.type || 'system';
@@ -55,10 +75,19 @@ export class NotificationService {
       };
     });
 
+    const totalPages = Math.ceil(totalItems / limitNum) || 1;
+
     return {
       success: true,
       message: 'Notifications retrieved successfully',
       data: formattedNotifications,
+      metaData: {
+        totalItems,
+        itemCount: formattedNotifications.length,
+        itemsPerPage: limitNum,
+        totalPages,
+        currentPage: pageNum,
+      },
     };
   }
 

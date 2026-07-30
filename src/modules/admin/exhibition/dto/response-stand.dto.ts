@@ -107,7 +107,7 @@ export class StandListResponseDataDto {
   items: StandListItemDto[];
 
   @ApiProperty({ type: StandPaginationMetaDto })
-  meta: StandPaginationMetaDto;
+  metaData: StandPaginationMetaDto;
 }
 
 export class StandListResponseDto {

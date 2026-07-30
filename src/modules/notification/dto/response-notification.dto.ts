@@ -20,12 +20,35 @@ export class NotificationDto {
   createdAt: Date;
 }
 
+export class NotificationPaginationMetaDto {
+  @ApiProperty({ example: 100 })
+  totalItems: number;
+
+  @ApiProperty({ example: 10 })
+  itemCount: number;
+
+  @ApiProperty({ example: 10 })
+  itemsPerPage: number;
+
+  @ApiProperty({ example: 10 })
+  totalPages: number;
+
+  @ApiProperty({ example: 1 })
+  currentPage: number;
+}
+
 export class NotificationListResponse {
   @ApiProperty({ example: true })
   success: boolean;
 
+  @ApiProperty({ example: 'Notifications retrieved successfully' })
+  message: string;
+
   @ApiProperty({ type: [NotificationDto] })
   data: NotificationDto[];
+
+  @ApiProperty({ type: NotificationPaginationMetaDto })
+  metaData: NotificationPaginationMetaDto;
 }
 
 export class NotificationActionResponse {
