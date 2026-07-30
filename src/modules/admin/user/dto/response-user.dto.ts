@@ -20,22 +20,13 @@ export class AdminUserDto {
   type: string | null;
 
   @ApiProperty({
-    example: 1,
-    description: '1 = Active, 0 = Inactive, 2 = Banned',
+    example: 'ACTIVE',
+    description: 'ACTIVE | INACTIVE | BANNED',
   })
-  status: number | null;
-
-  @ApiProperty({ example: 'Active', description: 'Active | Inactive | Banned' })
-  statusText: string;
+  status: string;
 
   @ApiProperty({ example: 'avatar_img.png', nullable: true })
   avatar: string | null;
-
-  @ApiProperty({
-    example: 'http://localhost:4000/storage/avatar_img.png',
-    nullable: true,
-  })
-  avatar_url?: string;
 
   @ApiProperty({ example: '2026-07-18T00:00:00.000Z', nullable: true })
   approvedAt: Date | null;
