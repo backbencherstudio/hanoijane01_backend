@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsNotEmpty,
   IsOptional,
@@ -7,7 +8,14 @@ import {
   MinLength,
   IsInt,
   IsIn,
+  IsEnum,
 } from 'class-validator';
+
+export enum UserStatus {
+  ACTIVE = 1,
+  INACTIVE = 0,
+  BANNED = 2,
+}
 
 export class CreateUserAdminDto {
   @IsNotEmpty()
@@ -45,11 +53,12 @@ export class CreateUserAdminDto {
   type?: string;
 
   @IsOptional()
-  @IsInt()
   @ApiPropertyOptional({
-    description: 'Status of the user (1 = Active, 0 = Inactive, 2 = Banned)',
-    example: 1,
-    default: 1,
+    description: 'Status of the user (ACTIVE, INACTIVE, BANNED)',
+    example: 'ACTIVE',
+    enum: ['ACTIVE', 'INACTIVE', 'BANNED'],
   })
-  status?: number;
+  @Transform(({ value }) => UserStatus[value?.toUpperCase()])
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }

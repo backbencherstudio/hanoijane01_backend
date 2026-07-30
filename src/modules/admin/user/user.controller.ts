@@ -91,7 +91,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Get all users with search, filters, and pagination',
     description:
-      'Fetches a paginated list of all registered users with search (name/email), status filter (1=active, 0=inactive, 2=banned), type filter (user/admin/vendor), and pagination parameters (page, limit). Each item includes user type and status text.',
+      'Fetches a paginated list of all registered users with search (name/email), status filter (ACTIVE, INACTIVE, BANNED), type filter (user/admin), and pagination parameters (page, limit). Each item includes user type and status text.',
   })
   @ApiResponse({
     status: 200,

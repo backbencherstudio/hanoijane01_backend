@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { CreateUserAdminDto } from './dto/create-user.dto';
+import { CreateUserAdminDto, UserStatus } from './dto/create-user.dto';
 import { UpdateUserAdminDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { QueryUserAttachmentDto } from './dto/query-user-attachment.dto';
@@ -83,7 +83,7 @@ export class UserService {
     return {
       success: true,
       message: 'User created successfully',
-      data: user,
+      data: { ...user, status: UserStatus[user.status] },
     };
   }
 
@@ -187,22 +187,13 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    const statusVal = user.status ?? 1;
-    let statusText = 'Active';
-    if (statusVal === 0) statusText = 'Inactive';
-    if (statusVal === 2) statusText = 'Banned';
-
-    if (user.avatar) {
-      user.avatar = NajimStorage.url(user.avatar);
-    }
-
     return {
       success: true,
       message: 'User details retrieved successfully',
       data: {
         ...user,
-        status: statusVal,
-        statusText,
+        status: UserStatus[user.status] ?? 'INACTIVE',
+        avatar: user.avatar ? NajimStorage.url(user.avatar) : null,
         type: user.type ?? 'user',
       },
     };
