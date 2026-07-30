@@ -111,9 +111,7 @@ export class StripeService {
           rawStatus: 'stand_conflict_auto_refunded',
         });
       } catch (err) {
-        this.logger.error(
-          `Failed to issue Stripe auto-refund: ${err.message}`,
-        );
+        this.logger.error(`Failed to issue Stripe auto-refund: ${err.message}`);
       }
     }
 
@@ -226,8 +224,9 @@ export class StripeService {
     dto: CreatePaymentIntentDto,
     userId?: string,
   ) {
-    const { booking, amount, currency } =
-      await this.validateBookingForPayment(dto.bookingId);
+    const { booking, amount, currency } = await this.validateBookingForPayment(
+      dto.bookingId,
+    );
 
     // Reuse existing active Payment Intent if price and currency match
     if (booking.stripePaymentIntentId) {

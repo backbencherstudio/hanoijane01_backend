@@ -174,11 +174,7 @@ export class TransactionRepository {
       where: { id: bookingId },
       data: {
         paymentStatus,
-        status: isPaid
-          ? 1
-          : isFailedOrCanceled
-            ? -1
-            : booking.status,
+        status: isPaid ? 1 : isFailedOrCanceled ? -1 : booking.status,
         stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
         stripeCheckoutSessionId:
           checkoutSessionId || booking.stripeCheckoutSessionId,

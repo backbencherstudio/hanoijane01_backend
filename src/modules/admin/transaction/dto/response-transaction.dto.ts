@@ -49,15 +49,6 @@ export class PaymentTransactionListResponse {
   @ApiProperty({ type: [PaymentTransactionDto] })
   data: PaymentTransactionDto[];
 }
-
-export class PaymentTransactionDetailResponse {
-  @ApiProperty({ example: true })
-  success: boolean;
-
-  @ApiProperty({ type: PaymentTransactionDto })
-  data: PaymentTransactionDto;
-}
-
 export class PaymentTransactionActionResponse {
   @ApiProperty({ example: true })
   success: boolean;

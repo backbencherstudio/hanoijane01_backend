@@ -154,13 +154,19 @@ export class UploadAttachmentResponseData {
   @ApiProperty({ example: 'logo', nullable: true })
   fileType: string | null;
 
-  @ApiProperty({ example: 1048576, description: 'File size in bytes', nullable: true })
+  @ApiProperty({
+    example: 1048576,
+    description: 'File size in bytes',
+    nullable: true,
+  })
   byteSize: number | null;
 
   @ApiProperty({ example: 'image/jpeg', nullable: true })
   mimeType: string | null;
 
-  @ApiProperty({ example: 'https://example.com/attachments/logo/abc123xyz.jpg?token=...' })
+  @ApiProperty({
+    example: 'https://example.com/attachments/logo/abc123xyz.jpg?token=...',
+  })
   fileUrl: string;
 }
 

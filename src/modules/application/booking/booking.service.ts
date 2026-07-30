@@ -144,10 +144,13 @@ export class BookingService {
           companyAddress: createBookingDto.companyAddress,
           email: createBookingDto.email,
           phoneNumber: createBookingDto.phoneNumber,
-          termsAndConditionsAccepted: createBookingDto.termsAndConditionsAccepted,
+          termsAndConditionsAccepted:
+            createBookingDto.termsAndConditionsAccepted,
           onBehalfOf: createBookingDto.onBehalfOf || null,
           title: createBookingDto.title || null,
-          ...(signaturePathToSave ? { signaturePath: signaturePathToSave } : {}),
+          ...(signaturePathToSave
+            ? { signaturePath: signaturePathToSave }
+            : {}),
           subTotalAmount,
           vatAmount,
           vatPercentage: vatPct,
@@ -165,7 +168,8 @@ export class BookingService {
           companyAddress: createBookingDto.companyAddress,
           email: createBookingDto.email,
           phoneNumber: createBookingDto.phoneNumber,
-          termsAndConditionsAccepted: createBookingDto.termsAndConditionsAccepted,
+          termsAndConditionsAccepted:
+            createBookingDto.termsAndConditionsAccepted,
           onBehalfOf: createBookingDto.onBehalfOf || null,
           title: createBookingDto.title || null,
           signaturePath: signaturePathToSave,
@@ -194,7 +198,8 @@ export class BookingService {
         status:
           restBooking.status === 1
             ? 'BOOKED'
-            : restBooking.status === -1 || restBooking.paymentStatus === 'canceled'
+            : restBooking.status === -1 ||
+                restBooking.paymentStatus === 'canceled'
               ? 'CANCELED'
               : 'PENDING',
         stand: {
@@ -280,7 +285,9 @@ export class BookingService {
           status === 1
             ? 'BOOKED'
             : status === -1 ||
-                ['CANCELED', 'REFUNDED', 'FAILED'].includes(formattedPaymentStatus)
+                ['CANCELED', 'REFUNDED', 'FAILED'].includes(
+                  formattedPaymentStatus,
+                )
               ? 'CANCELED'
               : 'PENDING';
 

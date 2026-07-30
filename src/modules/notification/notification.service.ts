@@ -19,10 +19,7 @@ export class NotificationService {
     const where_condition: Prisma.NotificationWhereInput = {};
 
     if (userDetails.type === Role.ADMIN) {
-      where_condition.OR = [
-        { receiverId: user_id },
-        { receiverId: null },
-      ];
+      where_condition.OR = [{ receiverId: user_id }, { receiverId: null }];
     } else {
       where_condition.receiverId = user_id;
     }
@@ -78,7 +75,10 @@ export class NotificationService {
       throw new NotFoundException('Notification not found');
     }
 
-    if (userDetails.type !== Role.ADMIN && notification.receiverId !== user_id) {
+    if (
+      userDetails.type !== Role.ADMIN &&
+      notification.receiverId !== user_id
+    ) {
       throw new NotFoundException('Notification not found');
     }
 
@@ -135,7 +135,10 @@ export class NotificationService {
       throw new NotFoundException('Notification not found');
     }
 
-    if (userDetails.type !== Role.ADMIN && notification.receiverId !== user_id) {
+    if (
+      userDetails.type !== Role.ADMIN &&
+      notification.receiverId !== user_id
+    ) {
       throw new NotFoundException('Notification not found');
     }
 
@@ -209,4 +212,3 @@ export class NotificationService {
     return `This action removes a #${id} notification`;
   }
 }
-

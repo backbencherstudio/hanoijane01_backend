@@ -257,8 +257,6 @@ export class AuthService {
     }
   }
 
-
-
   async createStripeCustomer(userId: string) {
     try {
       const user = await this.prisma.user.findFirst({

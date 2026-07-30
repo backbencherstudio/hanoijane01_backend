@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Delete, Patch, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Delete,
+  Patch,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import {
   ApiBearerAuth,

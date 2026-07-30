@@ -186,4 +186,3 @@ export class AdminUserAttachmentListResponse {
   @ApiProperty({ type: AdminUserMetaDataDto })
   meta_data: AdminUserMetaDataDto;
 }
-
