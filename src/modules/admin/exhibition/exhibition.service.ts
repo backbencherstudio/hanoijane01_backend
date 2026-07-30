@@ -367,7 +367,7 @@ export class ExhibitionService {
       success: true,
       message: 'Stands list retrieved successfully',
       data: items,
-      meta_data: {
+      metaData: {
         totalItems,
         itemCount: items.length,
         itemsPerPage: limit,

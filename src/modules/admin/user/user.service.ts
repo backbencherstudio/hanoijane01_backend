@@ -108,26 +108,8 @@ export class UserService {
       where_condition['type'] = query.type;
     }
 
-    if (
-      query.status !== undefined &&
-      query.status !== null &&
-      query.status !== ''
-    ) {
-      const statusStr = String(query.status).toLowerCase();
-      if (statusStr === 'active' || statusStr === '1') {
-        where_condition['status'] = 1;
-      } else if (statusStr === 'inactive' || statusStr === '0') {
-        where_condition['status'] = 0;
-      } else if (statusStr === 'banned' || statusStr === '2') {
-        where_condition['status'] = 2;
-      } else {
-        where_condition['status'] = Number(query.status);
-      }
-    }
-
-    if (query.approved) {
-      where_condition['approvedAt'] =
-        query.approved === 'approved' ? { not: null } : { equals: null };
+    if (query.status !== undefined && query.status !== null) {
+      where_condition.status = query.status;
     }
 
     const [users, total] = await Promise.all([
@@ -153,25 +135,17 @@ export class UserService {
       this.prisma.user.count({ where: where_condition }),
     ]);
 
-    const formattedUsers = users.map((user) => {
-      const statusVal = user.status ?? 1;
-      let statusText = 'Active';
-      if (statusVal === 0) statusText = 'Inactive';
-      if (statusVal === 2) statusText = 'Banned';
-
-      let avatar_url: string | null = null;
-      if (user.avatar) {
-        avatar_url = NajimStorage.url(user.avatar);
-      }
-
-      return {
-        ...user,
-        status: statusVal,
-        statusText,
-        type: user.type ?? 'user',
-        avatar_url,
-      };
-    });
+    const formattedUsers = users.map((user) => ({
+      ...user,
+      status:
+        user.status === 1
+          ? 'ACTIVE'
+          : user.status === 2
+            ? 'BANNED'
+            : 'INACTIVE',
+      type: user.type ?? 'user',
+      avatar: user.avatar ? NajimStorage.url(user.avatar) : null,
+    }));
 
     const totalPages = Math.ceil(total / limit) || 1;
 
@@ -179,7 +153,7 @@ export class UserService {
       success: true,
       message: 'Users retrieved successfully',
       data: formattedUsers,
-      meta_data: {
+      metaData: {
         totalItems: total,
         itemCount: formattedUsers.length,
         itemsPerPage: limit,
@@ -373,7 +347,7 @@ export class UserService {
       success: true,
       message: 'User attachments retrieved successfully',
       data: formattedAttachments,
-      meta_data: {
+      metaData: {
         totalItems: total,
         itemCount: formattedAttachments.length,
         itemsPerPage: limit,

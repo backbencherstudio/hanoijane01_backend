@@ -74,7 +74,7 @@ export class AdminUserListResponse {
   data: AdminUserDto[];
 
   @ApiProperty({ type: AdminUserMetaDataDto })
-  meta_data: AdminUserMetaDataDto;
+  metaData: AdminUserMetaDataDto;
 }
 
 export class AdminUserDetailResponse {
@@ -184,5 +184,5 @@ export class AdminUserAttachmentListResponse {
   data: AdminUserAttachmentDto[];
 
   @ApiProperty({ type: AdminUserMetaDataDto })
-  meta_data: AdminUserMetaDataDto;
+  metaData: AdminUserMetaDataDto;
 }

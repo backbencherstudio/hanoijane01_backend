@@ -45,7 +45,7 @@ export class TransactionService {
       success: true,
       message: 'Payment transactions retrieved successfully',
       data: paymentTransactions,
-      meta_data: {
+      metaData: {
         total: totalTransactions,
         page: page,
         limit: limit,

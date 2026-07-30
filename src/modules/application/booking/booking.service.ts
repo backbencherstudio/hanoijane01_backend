@@ -306,7 +306,7 @@ export class BookingService {
           exhibitionStartedAt: stand.category.hall?.exhibition?.startedAt,
         };
       }),
-      meta_data: {
+      metaData: {
         totalItems: totalBookings,
         itemCount: bookings.length,
         itemsPerPage: limit,

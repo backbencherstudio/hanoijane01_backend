@@ -1,5 +1,17 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+
+export enum UserStatus {
+  ACTIVE = 1,
+  INACTIVE = 0,
+  BANNED = 2,
+}
+
+export enum ApprovalStatus {
+  APPROVED = 'approved',
+  PENDING = 'pending',
+}
 
 export class QueryUserDto {
   @IsOptional()
@@ -14,26 +26,19 @@ export class QueryUserDto {
   @IsOptional()
   @IsString()
   @ApiPropertyOptional({
-    description: 'Role/Type filter (e.g. "user", "admin", "vendor")',
+    description: 'Role/Type filter (e.g. "user", "admin")',
     example: 'user',
   })
   type?: string;
 
   @IsOptional()
-  @IsString()
   @ApiPropertyOptional({
-    description: 'Status filter (1 / active, 0 / inactive, 2 / banned)',
-    example: '1',
+    enum: ['ALL', 'ACTIVE', 'INACTIVE', 'BANNED'],
+    example: 'ALL',
   })
-  status?: string;
-
-  @IsOptional()
-  @IsString()
-  @ApiPropertyOptional({
-    description: 'Approval filter status ("approved" or null)',
-    example: 'approved',
-  })
-  approved?: string;
+  @Transform(({ value }) => UserStatus[value?.toUpperCase()] ?? undefined)
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 
   @IsOptional()
   @ApiPropertyOptional({
@@ -46,8 +51,8 @@ export class QueryUserDto {
   @IsOptional()
   @ApiPropertyOptional({
     description: 'Number of items per page',
-    example: 8,
-    default: 8,
+    example: 10,
+    default: 10,
   })
   limit?: number;
 }

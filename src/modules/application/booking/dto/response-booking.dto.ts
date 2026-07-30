@@ -63,7 +63,7 @@ export class AppBookingListResponseDto {
   data: AppBookingItemDto[];
 
   @ApiProperty({ type: AppBookingMetaDataDto })
-  meta_data: AppBookingMetaDataDto;
+  metaData: AppBookingMetaDataDto;
 }
 
 export class AppBookingCreatedDataDto {

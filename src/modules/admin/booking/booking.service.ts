@@ -214,7 +214,7 @@ export class BookingService {
       success: true,
       message: 'Bookings fetched successfully',
       data: items,
-      meta_data: {
+      metaData: {
         totalItems,
         itemCount: items.length,
         itemsPerPage: limit,
