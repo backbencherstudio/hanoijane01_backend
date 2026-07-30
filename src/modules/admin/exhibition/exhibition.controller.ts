@@ -22,6 +22,7 @@ import { Role } from '../../../common/guard/role/role.enum';
 import {
   AdminExhibitionLatestResponseDto,
   AdminExhibitionActionResponseDto,
+  AdminExhibitionLatestDetailsResponseDto,
 } from './dto/response-exhibition.dto';
 import {
   GetExhibitionStatsQueryDto,
@@ -40,6 +41,21 @@ import { UpdateLatestExhibitionDto } from './dto/update-exhibition.dto';
 @Controller('admin/exhibition')
 export class ExhibitionController {
   constructor(private readonly exhibitionService: ExhibitionService) {}
+
+  @ApiOperation({
+    summary: 'Get latest exhibition metadata/details (Admin)',
+    description:
+      'Fetches the latest active exhibition metadata (title, dates, venue, booking deadlines) without stands list.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminExhibitionLatestDetailsResponseDto,
+    description: 'Latest exhibition details retrieved successfully',
+  })
+  @Get('latest-details')
+  getLatestExhibitionDetails() {
+    return this.exhibitionService.getLatestExhibitionDetails();
+  }
 
   @ApiOperation({
     summary: 'Get latest exhibition without halls (Admin)',

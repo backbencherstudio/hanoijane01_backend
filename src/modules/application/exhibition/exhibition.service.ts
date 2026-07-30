@@ -5,6 +5,34 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class ExhibitionService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getLatestExhibitionDetails() {
+    const exhibition = await this.prisma.exhibition.findFirst({
+      where: { deletedAt: null },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        slug: true,
+        location: true,
+        startedAt: true,
+        endedAt: true,
+        bookingStatedAt: true,
+        bookingEndedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!exhibition) {
+      throw new NotFoundException('No active exhibition found');
+    }
+
+    return {
+      success: true,
+      message: 'Exhibition details fetched successfully',
+      data: exhibition,
+    };
+  }
+
   async getLatestExhibition() {
     const exhibition = await this.prisma.exhibition.findFirst({
       select: {

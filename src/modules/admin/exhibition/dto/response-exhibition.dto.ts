@@ -91,3 +91,44 @@ export class AdminExhibitionActionResponseDto {
   @ApiProperty({ example: 'Latest exhibition updated successfully' })
   message: string;
 }
+
+export class AdminLatestExhibitionDetailsDataDto {
+  @ApiProperty({ example: 'clx1exhibition...' })
+  id: string;
+
+  @ApiProperty({ example: 'Annual Tech Expo 2026' })
+  title: string | null;
+
+  @ApiProperty({ example: 'The largest technology exhibition' })
+  description: string | null;
+
+  @ApiProperty({ example: 'annual-tech-expo-2026' })
+  slug: string | null;
+
+  @ApiProperty({ example: 'Dhaka Convention Center' })
+  location: string | null;
+
+  @ApiProperty({ example: '2026-07-20T00:00:00.000Z' })
+  startedAt: Date | null;
+
+  @ApiProperty({ example: '2026-07-25T00:00:00.000Z' })
+  endedAt: Date | null;
+
+  @ApiProperty({ example: '2026-07-20T00:00:00.000Z' })
+  bookingStatedAt: Date | null;
+
+  @ApiProperty({ example: '2026-07-25T00:00:00.000Z' })
+  bookingEndedAt: Date | null;
+}
+
+export class AdminExhibitionLatestDetailsResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ example: 'Latest exhibition details retrieved successfully' })
+  message: string;
+
+  @ApiProperty({ type: AdminLatestExhibitionDetailsDataDto })
+  data: AdminLatestExhibitionDetailsDataDto;
+}
+

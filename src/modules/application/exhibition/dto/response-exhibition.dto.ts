@@ -221,6 +221,46 @@ export class ResponseLatestExhibitionDto {
   data: AppExhibitionDataDto;
 }
 
+export class AppExhibitionDetailsDataDto {
+  @ApiProperty({ example: 'clx1exhibition...' })
+  id: string;
+
+  @ApiProperty({ example: 'ITBA EXPO The NEXT 100' })
+  title: string;
+
+  @ApiProperty({ example: 'The premier industry exhibition event.' })
+  description: string;
+
+  @ApiProperty({ example: 'itba-expo-next-100' })
+  slug: string;
+
+  @ApiProperty({ example: 'Goffs, Naas, Co. Kildare' })
+  location: string;
+
+  @ApiProperty({ example: '2027-01-06T00:00:00.000Z' })
+  startedAt: Date;
+
+  @ApiProperty({ example: '2027-01-08T00:00:00.000Z' })
+  endedAt: Date;
+
+  @ApiProperty({ example: '2026-01-01T00:00:00.000Z' })
+  bookingStatedAt: Date;
+
+  @ApiProperty({ example: '2026-12-06T00:00:00.000Z' })
+  bookingEndedAt: Date;
+}
+
+export class ResponseLatestExhibitionDetailsDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ example: 'Exhibition details fetched successfully' })
+  message: string;
+
+  @ApiProperty({ type: AppExhibitionDetailsDataDto })
+  data: AppExhibitionDetailsDataDto;
+}
+
 export class ResponseStandDetailDto {
   @ApiProperty({ example: true })
   success: boolean;

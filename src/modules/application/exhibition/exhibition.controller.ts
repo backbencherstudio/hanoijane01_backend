@@ -10,6 +10,7 @@ import { ExhibitionService } from './exhibition.service';
 import { AuthGuard } from '../../auth/guards/auth.guard';
 import {
   ResponseLatestExhibitionDto,
+  ResponseLatestExhibitionDetailsDto,
   ResponseStandDetailDto,
 } from './dto/response-exhibition.dto';
 import { RolesGuard } from 'src/common/guard/role/roles.guard';
@@ -20,6 +21,21 @@ import { Role } from 'src/common/guard/role/role.enum';
 @Controller('exhibition')
 export class ExhibitionController {
   constructor(private readonly exhibitionService: ExhibitionService) {}
+
+  @ApiOperation({
+    summary: 'Get latest exhibition details/metadata without halls and stands',
+    description:
+      'Fetches basic details (title, dates, venue, booking deadlines) of the active exhibition.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: ResponseLatestExhibitionDetailsDto,
+    description: 'Exhibition details fetched successfully',
+  })
+  @Get('latest-details')
+  getLatestExhibitionDetails() {
+    return this.exhibitionService.getLatestExhibitionDetails();
+  }
 
   @ApiOperation({
     summary: 'Get latest exhibition with nested halls, categories, and stands',

@@ -50,9 +50,8 @@ export class TransactionController {
     description: 'List of all transactions',
   })
   @Get()
-  async findAll(@Req() req: Request, @Query() query: QueryAdminTransactionDto) {
-    const user_id = req.user.id;
-    return this.transactionService.findAll(user_id, query);
+  async findAll(@Query() query: QueryAdminTransactionDto) {
+    return this.transactionService.findAll(query);
   }
 
   @ApiOperation({

@@ -1,30 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { UserRepository } from '../../../common/repository/user/user.repository';
 import { QueryAdminTransactionDto } from './dto/query-transaction.dto';
 
 @Injectable()
 export class TransactionService {
-  constructor(
-    private prisma: PrismaService,
-    private userRepository: UserRepository,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async findAll(user_id?: string, query?: QueryAdminTransactionDto) {
+  async findAll(query?: QueryAdminTransactionDto) {
     const { page = 1, limit = 10, status } = query;
     const skip = (page - 1) * limit;
-
-    const userDetails = await this.userRepository.getUserDetails(user_id);
 
     const whereClause: Prisma.PaymentTransactionWhereInput = {};
 
     if (status) {
       whereClause.status = status;
-    }
-
-    if (userDetails?.type === 'vendor') {
-      whereClause.userId = user_id;
     }
 
     const [paymentTransactions, totalTransactions] = await Promise.all([
