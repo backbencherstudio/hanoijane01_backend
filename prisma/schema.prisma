@@ -90,6 +90,10 @@ model User {
   billingId          String? @map("billing_id")
   status             Int?    @default(0) @db.SmallInt
   type               String? @default("user")
+  role               String? @default("user")
+  banned             Boolean? @default(false)
+  banReason          String? @map("ban_reason")
+  banExpires         DateTime? @map("ban_expires")
   emailVerified      Boolean @default(false) @map("email_verified")
 
   isTwoFactorEnabled Int?    @default(0) @map("is_two_factor_enabled")

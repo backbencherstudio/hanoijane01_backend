@@ -91,6 +91,27 @@ export class MailProcessor extends WorkerHost {
             `,
           });
           break;
+        case 'sendAccountCredentialsEmail':
+          this.logger.log(`Sending account credentials email to ${job.data.to}`);
+          await this.mailerService.sendMail({
+            to: job.data.to,
+            from: job.data.from,
+            subject: job.data.subject,
+            html: `
+              <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <h2 style="color: #2b6cb0;">Welcome to Platform!</h2>
+                <p>Hello <strong>${job.data.context.name}</strong>,</p>
+                <p>An account has been created for you by an administrator. Below are your login credentials:</p>
+                <div style="background: #f7fafc; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #3182ce;">
+                  <p style="margin: 5px 0;"><strong>Email:</strong> ${job.data.context.email}</p>
+                  <p style="margin: 5px 0;"><strong>Password:</strong> ${job.data.context.password}</p>
+                </div>
+                ${job.data.context.loginUrl ? `<p><a href="${job.data.context.loginUrl}" style="display: inline-block; padding: 10px 20px; background-color: #3182ce; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">Login Now</a></p>` : ''}
+                <p style="font-size: 13px; color: #718096; margin-top: 20px;">For security, please change your password after logging in for the first time.</p>
+              </div>
+            `,
+          });
+          break;
         default:
           this.logger.log('Unknown job name');
           return;

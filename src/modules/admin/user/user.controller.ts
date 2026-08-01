@@ -36,13 +36,18 @@ import {
 } from './dto/response-user.dto';
 import { auth } from 'src/modules/auth/auth';
 
+import { MailService } from '../../../mail/mail.service';
+
 @ApiBearerAuth()
 @ApiTags('Admin / User')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
 @Controller('admin/user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly mailService: MailService,
+  ) {}
 
   @ApiOperation({
     summary: 'Get user dashboard statistics (Admin)',
@@ -78,7 +83,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Create a new user / admin profile',
     description:
-      'Creates a new user record in the database with name, email, password, status (1=Active, 0=Inactive, -1=Banned), and type role (user | admin).',
+      'Creates a new user record in the database with name, email, password, status (1=Active, 0=Inactive, -1=Banned), and type role (user | admin). Automatically sends login credentials email to the user.',
   })
   @ApiResponse({
     status: 201,
@@ -92,7 +97,7 @@ export class UserController {
         name: createUserDto.name,
         email: createUserDto.email,
         password: createUserDto.password,
-        type: createUserDto.type,
+        type: createUserDto.type || 'user',
         status: createUserDto.status,
       },
       headers: req.headers as HeadersInit,
@@ -102,6 +107,13 @@ export class UserController {
       throw new BadRequestException('Failed to create user via Better Auth');
     }
 
+    // Send login credentials email to the newly created user
+    await this.mailService.sendAccountCredentialsEmail({
+      email: createUserDto.email,
+      name: createUserDto.name,
+      password: createUserDto.password,
+    });
+
     return {
       success: true,
       message: 'User created successfully',
@@ -109,8 +121,8 @@ export class UserController {
         id: authResult.user.id,
         name: authResult.user.name,
         email: authResult.user.email,
-        type: authResult.user.type,
-        status: UserStatus[authResult.user.status],
+        type: (authResult.user as any).type || (authResult.user as any).role,
+        status: UserStatus[(authResult.user as any).status],
         createdAt: authResult.user.createdAt,
       },
     };

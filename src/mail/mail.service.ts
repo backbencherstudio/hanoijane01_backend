@@ -176,4 +176,28 @@ export class MailService {
       console.log('Error adding sendContactMessageEmail to queue:', error);
     }
   }
+
+  async sendAccountCredentialsEmail(params: {
+    email: string;
+    name?: string | null;
+    password: string;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
+      const subject = `Your Account Credentials for ${appConfig().app.name || 'Hanoijane'}`;
+      await this.queue.add('sendAccountCredentialsEmail', {
+        to: params.email,
+        from,
+        subject,
+        context: {
+          name: params.name || 'User',
+          email: params.email,
+          password: params.password,
+          loginUrl: appConfig().app.client_app_url || '',
+        },
+      });
+    } catch (error) {
+      console.log('Error adding sendAccountCredentialsEmail to queue:', error);
+    }
+  }
 }
