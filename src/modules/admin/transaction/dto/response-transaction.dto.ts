@@ -56,3 +56,28 @@ export class PaymentTransactionActionResponse {
   @ApiProperty({ example: 'Operation completed successfully' })
   message: string;
 }
+
+export class PaymentTransactionStatsDataDto {
+  @ApiProperty({ example: 120, description: 'Count of succeeded transactions' })
+  succeeded: number;
+
+  @ApiProperty({ example: 15, description: 'Count of pending transactions' })
+  pending: number;
+
+  @ApiProperty({ example: 5, description: 'Count of failed transactions' })
+  failed: number;
+
+  @ApiProperty({ example: 2, description: 'Count of refunded transactions' })
+  refunded: number;
+}
+
+export class PaymentTransactionStatsResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ example: 'Transaction statistics retrieved successfully' })
+  message: string;
+
+  @ApiProperty({ type: PaymentTransactionStatsDataDto })
+  data: PaymentTransactionStatsDataDto;
+}

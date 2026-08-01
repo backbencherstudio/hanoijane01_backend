@@ -25,6 +25,7 @@ import { StripeService } from '../../payment/stripe/stripe.service';
 import {
   PaymentTransactionActionResponse,
   PaymentTransactionListResponse,
+  PaymentTransactionStatsResponseDto,
 } from './dto/response-transaction.dto';
 import { QueryAdminTransactionDto } from './dto/query-transaction.dto';
 
@@ -38,6 +39,21 @@ export class TransactionController {
     private readonly transactionService: TransactionService,
     private readonly stripeService: StripeService,
   ) {}
+
+  @ApiOperation({
+    summary: 'Get payment transaction statistics (Admin)',
+    description:
+      'Retrieves transaction counts grouped by status (Succeeded, Pending, Failed, Refunded).',
+  })
+  @ApiResponse({
+    status: 200,
+    type: PaymentTransactionStatsResponseDto,
+    description: 'Transaction statistics retrieved successfully',
+  })
+  @Get('stats')
+  async getStats() {
+    return this.transactionService.getStats();
+  }
 
   @ApiOperation({
     summary: 'Get all payment transactions',

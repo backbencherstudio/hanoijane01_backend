@@ -52,4 +52,44 @@ export class TransactionService {
       },
     };
   }
+
+  async getStats() {
+    const [succeeded, pending, failed, refunded] = await Promise.all([
+      this.prisma.paymentTransaction.count({
+        where: {
+          status: { in: ['succeeded', 'Succeeded', 'paid', 'Paid'] },
+          deletedAt: null,
+        },
+      }),
+      this.prisma.paymentTransaction.count({
+        where: {
+          status: { in: ['pending', 'Pending', 'unpaid', 'Unpaid'] },
+          deletedAt: null,
+        },
+      }),
+      this.prisma.paymentTransaction.count({
+        where: {
+          status: { in: ['failed', 'Failed'] },
+          deletedAt: null,
+        },
+      }),
+      this.prisma.paymentTransaction.count({
+        where: {
+          status: { in: ['refunded', 'Refunded', 'canceled', 'Canceled'] },
+          deletedAt: null,
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      message: 'Transaction statistics retrieved successfully',
+      data: {
+        succeeded,
+        pending,
+        failed,
+        refunded,
+      },
+    };
+  }
 }
