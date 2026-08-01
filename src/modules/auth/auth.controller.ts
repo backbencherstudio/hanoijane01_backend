@@ -2,8 +2,10 @@ import {
   All,
   Body,
   Controller,
+  Delete,
   Get,
   Logger,
+  Param,
   Patch,
   Post,
   Put,
@@ -19,6 +21,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
   ApiExcludeEndpoint,
@@ -345,6 +348,32 @@ export class AuthController {
       success: true,
       message: 'Password updated successfully',
     };
+  }
+
+  @ApiOperation({
+    summary: 'Delete user attachment by ID',
+    description:
+      'Deletes an uploaded attachment belonging to the authenticated user from storage and database.',
+  })
+  @ApiParam({
+    name: 'attachmentId',
+    type: String,
+    required: true,
+    description: 'The unique ID of the attachment to delete.',
+  })
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: 200,
+    type: ApiSuccessResponse,
+    description: 'Attachment deleted successfully',
+  })
+  @UseGuards(AuthGuard)
+  @Delete('attachment/:attachmentId')
+  async deleteAttachment(
+    @Session() session: UserSession,
+    @Param('attachmentId') attachmentId: string,
+  ) {
+    return this.authService.deleteAttachment(session.user.id, attachmentId);
   }
 
   // Catch-all proxy for Better Auth endpoints

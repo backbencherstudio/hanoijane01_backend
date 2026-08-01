@@ -285,4 +285,38 @@ export class AuthService {
       console.error('Failed to create Stripe customer:', error.message);
     }
   }
+
+  async deleteAttachment(userId: string, attachmentId: string) {
+    const attachment = await this.prisma.attachment.findUnique({
+      where: { id: attachmentId },
+      select: { id: true, userId: true, filePath: true },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found');
+    }
+
+    if (attachment.userId !== userId) {
+      throw new UnauthorizedException(
+        'You are not authorized to delete this attachment',
+      );
+    }
+
+    if (attachment.filePath) {
+      try {
+        await NajimStorage.delete(attachment.filePath);
+      } catch (error: any) {
+        console.error('Failed to delete storage file:', error?.message);
+      }
+    }
+
+    await this.prisma.attachment.delete({
+      where: { id: attachmentId },
+    });
+
+    return {
+      success: true,
+      message: 'Attachment deleted successfully',
+    };
+  }
 }
