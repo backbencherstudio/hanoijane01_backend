@@ -3,6 +3,7 @@ import { TransactionModule } from './transaction/transaction.module';
 import { UserModule } from './user/user.module';
 import { BookingModule } from './booking/booking.module';
 import { ExhibitionModule } from './exhibition/exhibition.module';
+import { SettingModule } from './setting/setting.module';
 import { OverviewModule } from './overview/overview.module';
 
 @Module({
@@ -12,6 +13,7 @@ import { OverviewModule } from './overview/overview.module';
     BookingModule,
     ExhibitionModule,
     OverviewModule,
+    SettingModule,
   ],
 })
 export class AdminModule {}

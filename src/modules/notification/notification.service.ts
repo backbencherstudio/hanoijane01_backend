@@ -93,7 +93,28 @@ export class NotificationService {
         title ||
         type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+      // Check user notification settings
+      const settingDef = await this.prisma.setting.findUnique({
+        where: { key: 'NOTIFICATION_ENABLED' },
+      });
+
+      const disabledRows = settingDef
+        ? await this.prisma.userSetting.findMany({
+            where: {
+              settingId: settingDef.id,
+              value: 'false',
+              userId: { in: targetUserIds },
+            },
+            select: { userId: true },
+          })
+        : [];
+
+      const disabledUserIdsSet = new Set(
+        disabledRows.map((r) => r.userId).filter(Boolean) as string[],
+      );
+
       for (const receiverId of targetUserIds) {
+        // Always record in database!
         const notification = await this.prisma.notification.create({
           data: {
             senderId,
@@ -104,34 +125,52 @@ export class NotificationService {
           },
         });
 
-        const payload = {
-          id: notification.id,
-          title: notificationTitle,
-          description: text,
-          createdAt: notification.createdAt,
-          readAt: notification.readAt,
-        };
+        const isEnabled = !disabledUserIdsSet.has(receiverId);
 
-        // Emit targeted Socket event to receiverId room ONLY
-        await this.notificationGateway.sendNotificationToUser(
-          receiverId,
-          payload,
-        );
+        // Emit real-time Socket event ONLY if notifications are enabled
+        if (isEnabled) {
+          const payload = {
+            id: notification.id,
+            title: notificationTitle,
+            description: text,
+            createdAt: notification.createdAt,
+            readAt: notification.readAt,
+          };
+
+          await this.notificationGateway.sendNotificationToUser(
+            receiverId,
+            payload,
+          );
+        }
       }
 
-      if (sendEmail && targetEmails.length > 0) {
-        if (contactEmailData) {
-          await this.mailService.sendContactMessageEmail({
-            to: targetEmails,
-            ...contactEmailData,
-          });
-        } else {
-          await this.mailService.sendNotificationEmail({
-            to: targetEmails,
-            subject: emailSubject || notificationTitle,
-            title: notificationTitle,
-            text,
-          });
+      const activeUserIds = targetUserIds.filter(
+        (id) => !disabledUserIdsSet.has(id),
+      );
+
+      if (sendEmail && activeUserIds.length > 0) {
+        const activeUsers = await this.prisma.user.findMany({
+          where: { id: { in: activeUserIds }, deletedAt: null },
+          select: { email: true },
+        });
+        const enabledEmails = activeUsers
+          .map((u) => u.email)
+          .filter(Boolean) as string[];
+
+        if (enabledEmails.length > 0) {
+          if (contactEmailData) {
+            await this.mailService.sendContactMessageEmail({
+              to: enabledEmails,
+              ...contactEmailData,
+            });
+          } else {
+            await this.mailService.sendNotificationEmail({
+              to: enabledEmails,
+              subject: emailSubject || notificationTitle,
+              title: notificationTitle,
+              text,
+            });
+          }
         }
       }
     } catch (error) {
