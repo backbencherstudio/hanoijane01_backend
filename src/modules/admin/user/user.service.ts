@@ -13,7 +13,7 @@ import { UserRepository } from '../../../common/repository/user/user.repository'
 import appConfig from '../../../config/app.config';
 import { NajimStorage } from '../../../common/lib/Disk/NajimStorage';
 import { DateHelper } from '../../../common/helper/date.helper';
-import * as bcrypt from 'bcrypt';
+import { auth } from '../../auth/auth';
 
 @Injectable()
 export class UserService {
@@ -43,50 +43,6 @@ export class UserService {
       },
     };
   }
-
-  async create(createUserDto: CreateUserAdminDto) {
-    const existingUser = await this.prisma.user.findFirst({
-      where: { email: createUserDto.email },
-    });
-
-    if (existingUser) {
-      throw new BadRequestException('User with this email already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(
-      createUserDto.password,
-      appConfig().security.salt,
-    );
-
-    const userStatus =
-      createUserDto.status !== undefined ? Number(createUserDto.status) : 1;
-    const userType = createUserDto.type || 'user';
-
-    const user = await this.prisma.user.create({
-      data: {
-        name: createUserDto.name,
-        email: createUserDto.email,
-        password: hashedPassword,
-        type: userType,
-        status: userStatus,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        type: true,
-        status: true,
-        createdAt: true,
-      },
-    });
-
-    return {
-      success: true,
-      message: 'User created successfully',
-      data: { ...user, status: UserStatus[user.status] },
-    };
-  }
-
   async findAll(query: QueryUserDto) {
     const page = query.page ? Number(query.page) : 1;
     const limit = query.limit ? Number(query.limit) : 8;

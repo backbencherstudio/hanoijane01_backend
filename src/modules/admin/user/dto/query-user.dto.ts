@@ -5,7 +5,7 @@ import { IsEnum, IsOptional, IsString } from 'class-validator';
 export enum UserStatus {
   ACTIVE = 1,
   INACTIVE = 0,
-  BANNED = 2,
+  BANNED = -1,
 }
 
 export enum ApprovalStatus {

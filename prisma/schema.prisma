@@ -88,7 +88,7 @@ model User {
   companyBio         String? @map("company_bio") @db.Text
   websiteLink        String? @map("website_link")
   billingId          String? @map("billing_id")
-  status             Int?    @default(1) @db.SmallInt
+  status             Int?    @default(0) @db.SmallInt
   type               String? @default("user")
   emailVerified      Boolean @default(false) @map("email_verified")
 

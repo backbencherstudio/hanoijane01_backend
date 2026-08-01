@@ -6,7 +6,6 @@ import {
   IsEmail,
   IsString,
   MinLength,
-  IsInt,
   IsIn,
   IsEnum,
 } from 'class-validator';
@@ -14,7 +13,7 @@ import {
 export enum UserStatus {
   ACTIVE = 1,
   INACTIVE = 0,
-  BANNED = 2,
+  BANNED = -1,
 }
 
 export class CreateUserAdminDto {

@@ -35,6 +35,23 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === '/sign-in/email') {
+        const body = ctx.body as Record<string, unknown> | undefined;
+        const email = typeof body?.email === 'string' ? body.email : undefined;
+        if (email) {
+          const userRecord = await prisma.user.findFirst({
+            where: { email, deletedAt: null },
+            select: { status: true },
+          });
+          if (userRecord && userRecord.status === -1) {
+            throw new APIError('FORBIDDEN', {
+              message: 'Your account has been banned. Please contact admin.',
+            });
+          }
+        }
+        return;
+      }
+
       if (ctx.path !== '/sign-up/email') return;
 
       const body = ctx.body as Record<string, unknown> | undefined;
@@ -52,6 +69,22 @@ export const auth = betterAuth({
         });
       }
     }),
+  },
+  databaseHooks: {
+    user: {
+      update: {
+        after: async (user) => {
+          // If email was verified and status is currently INACTIVE (0), activate user (status = 1).
+          // If user status is BANNED (-1), do not activate automatically.
+          if (user.emailVerified && user.status === 0) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { status: 1 },
+            });
+          }
+        },
+      },
+    },
   },
   baseURL: appConfig().app.url,
   basePath: '/api/auth',
@@ -72,6 +105,7 @@ export const auth = betterAuth({
       phoneNumber: { type: 'string', required: false },
       billingId: { type: 'string', required: false },
       type: { type: 'string', required: false, defaultValue: 'user' },
+      status: { type: 'number', required: false, defaultValue: 0 },
     },
   },
 

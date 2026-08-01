@@ -20,6 +20,12 @@ export class AuthGuard implements CanActivate {
         throw new UnauthorizedException('Unauthorized');
       }
 
+      if ((session.user as any)?.status === -1) {
+        throw new UnauthorizedException(
+          'Your account has been banned. Please contact support.',
+        );
+      }
+
       request.user = session.user;
       request.session = session.session;
 

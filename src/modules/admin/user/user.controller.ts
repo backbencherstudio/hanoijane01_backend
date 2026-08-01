@@ -8,9 +8,12 @@ import {
   Delete,
   UseGuards,
   Query,
+  Req,
+  BadRequestException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { UserService } from './user.service';
-import { CreateUserAdminDto } from './dto/create-user.dto';
+import { CreateUserAdminDto, UserStatus } from './dto/create-user.dto';
 import { UpdateUserAdminDto } from './dto/update-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { QueryUserAttachmentDto } from './dto/query-user-attachment.dto';
@@ -33,6 +36,7 @@ import {
   AdminUserListResponse,
   AdminUserStatsResponseDto,
 } from './dto/response-user.dto';
+import { auth } from 'src/modules/auth/auth';
 
 @ApiBearerAuth()
 @ApiTags('Admin / User')
@@ -84,8 +88,34 @@ export class UserController {
     description: 'User created successfully',
   })
   @Post()
-  async create(@Body() createUserDto: CreateUserAdminDto) {
-    return this.userService.create(createUserDto);
+  async create(@Body() createUserDto: CreateUserAdminDto, @Req() req: Request) {
+    const authResult = await auth.api.signUpEmail({
+      body: {
+        name: createUserDto.name,
+        email: createUserDto.email,
+        password: createUserDto.password,
+        type: createUserDto.type,
+        status: createUserDto.status,
+      },
+      headers: req.headers as HeadersInit,
+    });
+
+    if (!authResult?.user) {
+      throw new BadRequestException('Failed to create user via Better Auth');
+    }
+
+    return {
+      success: true,
+      message: 'User created successfully',
+      data: {
+        id: authResult.user.id,
+        name: authResult.user.name,
+        email: authResult.user.email,
+        type: authResult.user.type,
+        status: UserStatus[authResult.user.status],
+        createdAt: authResult.user.createdAt,
+      },
+    };
   }
 
   @ApiOperation({
