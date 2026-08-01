@@ -6,13 +6,138 @@ import { Prisma } from 'prisma/generated/client';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { QueryNotificationDto } from './dto/query-notification.dto';
+import { NotificationGateway } from './notification.gateway';
+import { MailService } from '../../mail/mail.service';
+
+export interface SendNotificationOptions {
+  type: string;
+  title?: string;
+  text: string;
+  senderId?: string | null;
+  receiverIds?: string | string[] | null; // null or [] targets all admins
+  entityId?: string | null;
+  sendEmail?: boolean;
+  emailSubject?: string;
+  contactEmailData?: {
+    name?: string | null;
+    email: string;
+    companyName?: string | null;
+    phoneNumber?: string | null;
+    message: string;
+  };
+}
 
 @Injectable()
 export class NotificationService {
   constructor(
     private prisma: PrismaService,
     private userRepository: UserRepository,
+    private notificationGateway: NotificationGateway,
+    private mailService: MailService,
   ) {}
+
+  /**
+   * Universal helper to persist DB notifications, emit targeted real-time socket events, and queue emails.
+   */
+  async sendNotification(options: SendNotificationOptions) {
+    try {
+      const {
+        type,
+        title,
+        text,
+        senderId = null,
+        entityId = null,
+        sendEmail = false,
+        emailSubject,
+        contactEmailData,
+      } = options;
+
+      let targetUserIds: string[] = [];
+      let targetEmails: string[] = [];
+
+      if (
+        !options.receiverIds ||
+        (Array.isArray(options.receiverIds) && options.receiverIds.length === 0)
+      ) {
+        const adminUsers = await this.prisma.user.findMany({
+          where: { type: Role.ADMIN, deletedAt: null },
+          select: { id: true, email: true },
+        });
+        targetUserIds = adminUsers.map((u) => u.id);
+        targetEmails = adminUsers
+          .map((u) => u.email)
+          .filter(Boolean) as string[];
+      } else {
+        targetUserIds = Array.isArray(options.receiverIds)
+          ? options.receiverIds
+          : [options.receiverIds];
+
+        const targetUsers = await this.prisma.user.findMany({
+          where: { id: { in: targetUserIds }, deletedAt: null },
+          select: { id: true, email: true },
+        });
+        targetEmails = targetUsers
+          .map((u) => u.email)
+          .filter(Boolean) as string[];
+      }
+
+      const notificationEvent = await this.prisma.notificationEvent.create({
+        data: {
+          type,
+          text,
+          status: 1,
+        },
+      });
+
+      const notificationTitle =
+        title ||
+        type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+      for (const receiverId of targetUserIds) {
+        const notification = await this.prisma.notification.create({
+          data: {
+            senderId,
+            receiverId,
+            notificationEventId: notificationEvent.id,
+            entityId,
+            status: 1,
+          },
+        });
+
+        const payload = {
+          id: notification.id,
+          title: notificationTitle,
+          description: text,
+          createdAt: notification.createdAt,
+          readAt: notification.readAt,
+        };
+
+        // Emit targeted Socket event to receiverId room ONLY
+        await this.notificationGateway.sendNotificationToUser(
+          receiverId,
+          payload,
+        );
+      }
+
+      if (sendEmail && targetEmails.length > 0) {
+        if (contactEmailData) {
+          await this.mailService.sendContactMessageEmail({
+            to: targetEmails,
+            ...contactEmailData,
+          });
+        } else {
+          await this.mailService.sendNotificationEmail({
+            to: targetEmails,
+            subject: emailSubject || notificationTitle,
+            title: notificationTitle,
+            text,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error in sendNotification:', error);
+    }
+  }
 
   // Database operations
   async findAll(user_id: string, query: QueryNotificationDto = {}) {

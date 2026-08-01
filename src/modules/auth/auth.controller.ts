@@ -51,12 +51,17 @@ import { AuthGuard } from './guards/auth.guard';
 import { Session, UserSession } from './decorators/session.decorator';
 import { auth } from './auth';
 
+import { NotificationService } from '../notification/notification.service';
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private notificationService: NotificationService,
+  ) {}
 
   // Helper: Forward cookies from Better Auth response
   private forwardCookies(result: { headers?: Headers }, res: Response) {
@@ -115,6 +120,20 @@ export class AuthController {
       },
       headers: req.headers as HeadersInit,
     });
+
+    if (result?.user) {
+      await this.notificationService.sendNotification({
+        type: 'user_registered',
+        title: 'New User Registration',
+        text: `New user ${body.name || body.email} (${body.email}) has registered on the platform.`,
+        senderId: result.user.id,
+        receiverIds: null, // targets all admins
+        entityId: result.user.id,
+        sendEmail: true,
+        emailSubject: 'New User Registration Notification',
+      });
+    }
+
     return { success: true, data: result };
   }
 

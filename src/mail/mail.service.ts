@@ -118,4 +118,62 @@ export class MailService {
       console.log(error);
     }
   }
+
+  async sendNotificationEmail(params: {
+    to: string | string[];
+    subject: string;
+    title: string;
+    text: string;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
+      const recipients = Array.isArray(params.to) ? params.to : [params.to];
+      for (const recipient of recipients) {
+        if (!recipient) continue;
+        await this.queue.add('sendNotificationEmail', {
+          to: recipient,
+          from,
+          subject: params.subject,
+          context: {
+            title: params.title,
+            text: params.text,
+          },
+        });
+      }
+    } catch (error) {
+      console.log('Error adding sendNotificationEmail to queue:', error);
+    }
+  }
+
+  async sendContactMessageEmail(params: {
+    to: string | string[];
+    name?: string | null;
+    email: string;
+    companyName?: string | null;
+    phoneNumber?: string | null;
+    message: string;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
+      const recipients = Array.isArray(params.to) ? params.to : [params.to];
+      const subject = `New Contact Message from ${params.name || params.email}`;
+      for (const recipient of recipients) {
+        if (!recipient) continue;
+        await this.queue.add('sendContactMessageEmail', {
+          to: recipient,
+          from,
+          subject,
+          context: {
+            name: params.name || 'N/A',
+            email: params.email,
+            companyName: params.companyName || 'N/A',
+            phoneNumber: params.phoneNumber || 'N/A',
+            message: params.message,
+          },
+        });
+      }
+    } catch (error) {
+      console.log('Error adding sendContactMessageEmail to queue:', error);
+    }
+  }
 }

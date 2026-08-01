@@ -1,18 +1,13 @@
 import {
   WebSocketGateway,
-  SubscribeMessage,
-  MessageBody,
   OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { OnModuleInit } from '@nestjs/common';
+import { OnModuleInit, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
-import { NotificationService } from './notification.service';
-import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
 import appConfig from '../../config/app.config';
 
 @WebSocketGateway({
@@ -20,6 +15,7 @@ import appConfig from '../../config/app.config';
     origin: '*',
   },
 })
+@Injectable()
 export class NotificationGateway
   implements
     OnGatewayInit,
@@ -30,89 +26,109 @@ export class NotificationGateway
   @WebSocketServer()
   server: Server;
 
+  private readonly logger = new Logger(NotificationGateway.name);
   private redisPubClient: Redis;
   private redisSubClient: Redis;
 
-  // Map to store connected clients
-  private clients = new Map<string, string>(); // userId -> socketId
-
-  constructor(private readonly notificationService: NotificationService) {}
-
   onModuleInit() {
-    this.redisPubClient = new Redis({
-      host: appConfig().redis.host,
-      port: Number(appConfig().redis.port),
-      password: appConfig().redis.password,
-    });
+    try {
+      this.redisPubClient = new Redis({
+        host: appConfig().redis.host,
+        port: Number(appConfig().redis.port),
+        password: appConfig().redis.password,
+        lazyConnect: true,
+      });
 
-    this.redisSubClient = new Redis({
-      host: appConfig().redis.host,
-      port: Number(appConfig().redis.port),
-      password: appConfig().redis.password,
-    });
+      this.redisSubClient = new Redis({
+        host: appConfig().redis.host,
+        port: Number(appConfig().redis.port),
+        password: appConfig().redis.password,
+        lazyConnect: true,
+      });
 
-    this.redisSubClient.subscribe('notification', (err, message: string) => {
-      const data = JSON.parse(message);
-      this.server.emit('receiveNotification', data);
-    });
+      this.redisPubClient.connect().catch((err) => {
+        this.logger.warn(`Redis pub client connect error: ${err.message}`);
+      });
+
+      this.redisSubClient
+        .connect()
+        .then(() => {
+          this.redisSubClient.subscribe(
+            'notification_channel',
+            (err, count) => {
+              if (err) {
+                this.logger.error(`Redis subscribe error: ${err.message}`);
+              }
+            },
+          );
+        })
+        .catch((err) => {
+          this.logger.warn(`Redis sub client connect error: ${err.message}`);
+        });
+
+      this.redisSubClient.on('message', (channel: string, message: string) => {
+        if (channel === 'notification_channel') {
+          try {
+            const parsed = JSON.parse(message);
+            if (parsed.receiverId && parsed.data) {
+              this.server
+                .to(parsed.receiverId)
+                .emit('notification', parsed.data);
+            }
+          } catch (e) {
+            this.logger.error(`Error parsing redis notification message: ${e}`);
+          }
+        }
+      });
+    } catch (err) {
+      this.logger.error(`Error initializing Redis in gateway: ${err}`);
+    }
   }
 
   afterInit(server: Server) {
-    console.log('Websocket server started');
+    this.logger.log('WebSocket Gateway initialized');
   }
 
-  async handleConnection(client: Socket, ...args: any[]) {
-    const userId = client.handshake.query.userId as string; // User ID passed as query parameter
+  async handleConnection(client: Socket) {
+    const userId =
+      (client.handshake.query.userId as string) ||
+      (client.handshake.auth?.userId as string);
+
     if (userId) {
-      this.clients.set(userId, client.id);
-      console.log(`User ${userId} connected with socket ${client.id}`);
+      client.join(userId);
+      this.logger.log(
+        `User ${userId} joined room ${userId} (socket ${client.id})`,
+      );
+    } else {
+      this.logger.log(`Socket ${client.id} connected without userId`);
     }
   }
 
   handleDisconnect(client: Socket) {
-    const userId = [...this.clients.entries()].find(
-      ([, socketId]) => socketId === client.id,
-    )?.[0];
-    if (userId) {
-      this.clients.delete(userId);
-      console.log(`User ${userId} disconnected`);
+    this.logger.log(`Socket ${client.id} disconnected`);
+  }
+
+  /**
+   * Target emission to a specific receiverId room ONLY.
+   */
+  async sendNotificationToUser(receiverId: string, payload: any) {
+    if (!receiverId) return;
+
+    // 1. Direct Socket Emit to room receiverId
+    if (this.server) {
+      this.server.to(receiverId).emit('notification', payload);
     }
-  }
 
-  @SubscribeMessage('sendNotification')
-  async handleNotification(@MessageBody() data: any) {
-    console.log(`Received notification: ${JSON.stringify(data)}`);
-    const targetSocketId = this.clients.get(data.userId);
-    if (targetSocketId) {
-      await this.redisPubClient.publish('notification', JSON.stringify(data));
+    // 2. Redis pub/sub for multi-instance scaling
+    if (this.redisPubClient && this.redisPubClient.status === 'ready') {
+      try {
+        await this.redisPubClient.publish(
+          'notification_channel',
+          JSON.stringify({ receiverId, data: payload }),
+        );
+      } catch (err) {
+        this.logger.warn(`Failed to publish to redis: ${err}`);
+      }
     }
-  }
-
-  @SubscribeMessage('createNotification')
-  create(@MessageBody() createNotificationDto: CreateNotificationDto) {
-    return this.notificationService.create(createNotificationDto);
-  }
-
-  @SubscribeMessage('findAllNotification')
-  findAll() {
-    return this.notificationService.findAllGateway();
-  }
-
-  @SubscribeMessage('findOneNotification')
-  findOne(@MessageBody() id: number) {
-    return this.notificationService.findOneGateway(id);
-  }
-
-  @SubscribeMessage('updateNotification')
-  update(@MessageBody() updateNotificationDto: UpdateNotificationDto) {
-    return this.notificationService.updateGateway(
-      updateNotificationDto.id,
-      updateNotificationDto,
-    );
-  }
-
-  @SubscribeMessage('removeNotification')
-  remove(@MessageBody() id: number) {
-    return this.notificationService.removeGateway(id);
   }
 }

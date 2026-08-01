@@ -11,21 +11,29 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { UserRepository } from '../../../common/repository/user/user.repository';
 import { NajimStorage } from '../../../common/lib/Disk/NajimStorage';
 import { auth } from '../../auth/auth';
+import { NotificationService } from '../../notification/notification.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService,
     private userRepository: UserRepository,
+    private notificationService: NotificationService,
   ) {}
 
   async getStats() {
     const [totalUser, activeUser, inactiveUser, bannedUser] = await Promise.all(
       [
         this.prisma.user.count({ where: { deletedAt: null } }),
-        this.prisma.user.count({ where: { status: 1, deletedAt: null } }),
-        this.prisma.user.count({ where: { status: 0, deletedAt: null } }),
-        this.prisma.user.count({ where: { status: 2, deletedAt: null } }),
+        this.prisma.user.count({
+          where: { status: 1, deletedAt: null },
+        }),
+        this.prisma.user.count({
+          where: { status: 0, deletedAt: null },
+        }),
+        this.prisma.user.count({
+          where: { status: -1, deletedAt: null },
+        }),
       ],
     );
 
@@ -213,6 +221,16 @@ export class UserService {
         await this.prisma.session.deleteMany({
           where: { userId: id },
         });
+
+        await this.notificationService.sendNotification({
+          type: 'user_banned',
+          title: 'Account Banned',
+          text: 'Your account has been banned by an administrator.',
+          receiverIds: id,
+          entityId: id,
+          sendEmail: true,
+          emailSubject: 'Account Banned Notice',
+        });
       } else if (existingUser.status === -1) {
         try {
           await auth.api.unbanUser({
@@ -222,6 +240,16 @@ export class UserService {
             headers: reqHeaders,
           });
         } catch (_) {}
+
+        await this.notificationService.sendNotification({
+          type: 'user_unbanned',
+          title: 'Account Unbanned',
+          text: 'Your account has been unbanned and restored to active status.',
+          receiverIds: id,
+          entityId: id,
+          sendEmail: true,
+          emailSubject: 'Account Unbanned Notice',
+        });
       }
     }
 

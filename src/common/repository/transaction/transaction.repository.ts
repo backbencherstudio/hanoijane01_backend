@@ -31,11 +31,16 @@ export interface UpdateTransactionParams {
   receiptUrl?: string;
 }
 
+import { NotificationService } from '../../../modules/notification/notification.service';
+
 @Injectable()
 export class TransactionRepository {
   private readonly logger = new Logger(TransactionRepository.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   /**
    * Create or log a new payment transaction
@@ -269,6 +274,74 @@ export class TransactionRepository {
           stripeCheckoutSessionId: checkoutSessionId,
           receiptUrl: receiptUrl,
         },
+      });
+    }
+
+    // 4. Send Notifications & Emails based on payment status
+    const standName = booking.stand?.standNumber
+      ? `Stand ${booking.stand.standNumber}`
+      : 'your stand';
+    const formattedAmount =
+      amount !== undefined ? amount : Number(booking.totalAmount);
+
+    if (isPaid) {
+      if (booking.userId) {
+        await this.notificationService.sendNotification({
+          type: 'payment_success',
+          title: 'Payment Successful',
+          text: `Your payment of €${formattedAmount} for ${standName} was successful.`,
+          receiverIds: booking.userId,
+          entityId: bookingId,
+          sendEmail: true,
+          emailSubject: 'Payment Successful - Booking Confirmed',
+        });
+      }
+
+      await this.notificationService.sendNotification({
+        type: 'payment_success',
+        title: 'New Payment Received',
+        text: `Payment of €${formattedAmount} for ${standName} was successfully processed.`,
+        receiverIds: null,
+        entityId: bookingId,
+        sendEmail: true,
+        emailSubject: 'New Stand Booking Payment Received',
+      });
+    } else if (paymentStatus === 'failed') {
+      if (booking.userId) {
+        await this.notificationService.sendNotification({
+          type: 'payment_failed',
+          title: 'Payment Failed',
+          text: `Payment for ${standName} failed. Please try again or update your payment method.`,
+          receiverIds: booking.userId,
+          entityId: bookingId,
+          sendEmail: true,
+          emailSubject: 'Payment Failed Notice',
+        });
+      }
+    } else if (
+      paymentStatus === 'refunded' ||
+      paymentStatus === 'conflict_refund_needed'
+    ) {
+      if (booking.userId) {
+        await this.notificationService.sendNotification({
+          type: 'booking_refunded',
+          title: 'Booking Canceled & Refunded',
+          text: `Your booking for ${standName} has been canceled and auto-refunded.`,
+          receiverIds: booking.userId,
+          entityId: bookingId,
+          sendEmail: true,
+          emailSubject: 'Booking Canceled & Refunded',
+        });
+      }
+
+      await this.notificationService.sendNotification({
+        type: 'booking_refunded',
+        title: 'Booking Auto-Refunded',
+        text: `Booking for ${standName} was canceled and refunded.`,
+        receiverIds: null,
+        entityId: bookingId,
+        sendEmail: true,
+        emailSubject: 'Booking Refund Notification',
       });
     }
 
