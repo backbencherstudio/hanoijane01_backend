@@ -46,7 +46,7 @@ export class SettingController {
   @ApiOperation({
     summary: 'Update notification settings (Admin)',
     description:
-      'Updates the notification setting (enabled: boolean). Default is true. When set to false, notification emails and socket events will be disabled for this user, but database entries will still be recorded.',
+      'Updates the notification setting (`notification: boolean`). Default is true. When set to false, notification emails and socket events will be disabled for this user, but database entries will still be recorded.',
   })
   @ApiResponse({
     status: 200,

@@ -5,7 +5,7 @@ export class AdminSettingDataDto {
     example: true,
     description: 'Whether notification emails and socket emissions are enabled',
   })
-  enabled: boolean;
+  notification: boolean;
 }
 
 export class AdminSettingResponseDto {

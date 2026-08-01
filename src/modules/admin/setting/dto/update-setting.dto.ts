@@ -8,5 +8,5 @@ export class UpdateSettingDto {
       'Enable (true) or disable (false) real-time socket and email notifications. Default is true.',
   })
   @IsBoolean()
-  enabled: boolean;
+  notification: boolean;
 }

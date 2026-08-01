@@ -39,13 +39,13 @@ export class SettingService {
       },
     });
 
-    const enabled = userSetting ? userSetting.value !== 'false' : true;
+    const notification = userSetting ? userSetting.value !== 'false' : true;
 
     return {
       success: true,
       message: 'Notification settings retrieved successfully',
       data: {
-        enabled,
+        notification,
       },
     };
   }
@@ -55,7 +55,7 @@ export class SettingService {
    */
   async updateSettings(userId: string, updateDto: UpdateSettingDto) {
     const settingDef = await this.getSettingDefinition();
-    const strValue = updateDto.enabled ? 'true' : 'false';
+    const strValue = updateDto.notification ? 'true' : 'false';
 
     const existingUserSetting = await this.prisma.userSetting.findFirst({
       where: {
@@ -83,7 +83,7 @@ export class SettingService {
       success: true,
       message: 'Notification settings updated successfully',
       data: {
-        enabled: updateDto.enabled,
+        notification: updateDto.notification,
       },
     };
   }
