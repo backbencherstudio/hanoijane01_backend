@@ -203,7 +203,7 @@ export class NotificationService {
       };
     }
 
-    const [totalItems, notifications] = await Promise.all([
+    const [totalItems, notifications, unreadCount] = await Promise.all([
       this.prisma.notification.count({ where: where_condition }),
       this.prisma.notification.findMany({
         where: where_condition,
@@ -221,6 +221,12 @@ export class NotificationService {
               text: true,
             },
           },
+        },
+      }),
+      this.prisma.notification.count({
+        where: {
+          ...where_condition,
+          readAt: null,
         },
       }),
     ]);
@@ -247,10 +253,10 @@ export class NotificationService {
       data: formattedNotifications,
       metaData: {
         totalItems,
-        itemCount: formattedNotifications.length,
         itemsPerPage: limitNum,
         totalPages,
         currentPage: pageNum,
+        unreadCount,
       },
     };
   }

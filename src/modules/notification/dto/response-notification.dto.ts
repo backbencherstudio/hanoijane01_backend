@@ -25,7 +25,7 @@ export class NotificationPaginationMetaDto {
   totalItems: number;
 
   @ApiProperty({ example: 10 })
-  itemCount: number;
+  unreadCount: number;
 
   @ApiProperty({ example: 10 })
   itemsPerPage: number;
