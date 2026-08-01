@@ -33,7 +33,7 @@ export class UploadAttachmentDto {
     example: AttachmentFileType.LOGO,
     default: AttachmentFileType.OTHERS,
   })
-  fileType?: AttachmentFileType;
+  fileType?: AttachmentFileType = AttachmentFileType.OTHERS;
 
   @Transform(({ value }) =>
     value === '' || value === null ? undefined : value,

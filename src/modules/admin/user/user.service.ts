@@ -5,14 +5,11 @@ import {
 } from '@nestjs/common';
 import { CreateUserAdminDto, UserStatus } from './dto/create-user.dto';
 import { UpdateUserAdminDto } from './dto/update-user.dto';
-import { QueryUserDto } from './dto/query-user.dto';
-import { QueryUserAttachmentDto } from './dto/query-user-attachment.dto';
+import { QueryUserDto, QueryUserAttachmentDto } from './dto/query-user.dto';
 import { Prisma } from 'prisma/generated/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { UserRepository } from '../../../common/repository/user/user.repository';
-import appConfig from '../../../config/app.config';
 import { NajimStorage } from '../../../common/lib/Disk/NajimStorage';
-import { DateHelper } from '../../../common/helper/date.helper';
 import { auth } from '../../auth/auth';
 
 @Injectable()
@@ -155,45 +152,100 @@ export class UserService {
     };
   }
 
-  async approve(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: id },
+  async update(
+    id: string,
+    updateUserDto: UpdateUserAdminDto,
+    reqHeaders?: HeadersInit,
+  ) {
+    const existingUser = await this.prisma.user.findFirst({
+      where: { id, deletedAt: null },
     });
-    if (!user) {
+
+    if (!existingUser) {
       throw new NotFoundException('User not found');
     }
-    await this.prisma.user.update({
-      where: { id: id },
-      data: { approvedAt: DateHelper.now() },
-    });
-    return {
-      success: true,
-      message: 'User approved successfully',
-    };
-  }
 
-  async reject(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: id },
-    });
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (updateUserDto.password) {
+      await auth.api.setUserPassword({
+        body: {
+          newPassword: updateUserDto.password,
+          userId: id,
+        },
+        headers: reqHeaders,
+      });
     }
-    await this.prisma.user.update({
-      where: { id: id },
-      data: { approvedAt: null },
+
+    const data: Prisma.UserUpdateInput = {};
+
+    if (updateUserDto.name) {
+      data.name = updateUserDto.name;
+    }
+
+    if (updateUserDto.email) {
+      const emailConflict = await this.prisma.user.findFirst({
+        where: { email: updateUserDto.email, id: { not: id }, deletedAt: null },
+      });
+
+      if (emailConflict) {
+        throw new BadRequestException('User with this email already exists');
+      }
+      data.email = updateUserDto.email;
+    }
+
+    if (updateUserDto.type) {
+      data.type = updateUserDto.type;
+    }
+
+    if (updateUserDto.status !== undefined && updateUserDto.status !== null) {
+      const statusNum = Number(updateUserDto.status);
+      data.status = statusNum;
+
+      if (statusNum === -1) {
+        try {
+          await auth.api.banUser({
+            body: {
+              userId: id,
+              banReason: 'Banned by admin',
+            },
+            headers: reqHeaders,
+          });
+        } catch (_) {}
+        await this.prisma.session.deleteMany({
+          where: { userId: id },
+        });
+      } else if (existingUser.status === -1) {
+        try {
+          await auth.api.unbanUser({
+            body: {
+              userId: id,
+            },
+            headers: reqHeaders,
+          });
+        } catch (_) {}
+      }
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        type: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
+
     return {
       success: true,
-      message: 'User rejected successfully',
-    };
-  }
-
-  async update(id: string, updateUserDto: UpdateUserAdminDto) {
-    const user = await this.userRepository.updateUser(id, updateUserDto);
-    return {
-      success: user.success,
-      message: user.message,
+      message: 'User updated successfully',
+      data: {
+        ...updatedUser,
+        status: UserStatus[updatedUser.status] ?? 'INACTIVE',
+      },
     };
   }
 
@@ -208,82 +260,127 @@ export class UserService {
     const skip = (page - 1) * limit;
 
     const searchKeyword = query.search;
-    const where_condition: Prisma.AttachmentWhereInput = {};
+    const where_condition: Prisma.UserWhereInput = {
+      deletedAt: null,
+      attachments: {
+        some: query.fileType
+          ? { fileType: { contains: query.fileType, mode: 'insensitive' } }
+          : {},
+      },
+    };
 
     if (query.userId) {
-      where_condition.userId = query.userId;
-    }
-
-    if (query.fileType) {
-      where_condition.fileType = {
-        contains: query.fileType,
-        mode: 'insensitive',
-      };
+      where_condition.id = query.userId;
     }
 
     if (searchKeyword) {
-      where_condition.OR = [
-        { fileName: { contains: searchKeyword, mode: 'insensitive' } },
-        { fileType: { contains: searchKeyword, mode: 'insensitive' } },
+      where_condition.AND = [
         {
-          user: {
-            OR: [
-              { name: { contains: searchKeyword, mode: 'insensitive' } },
-              { email: { contains: searchKeyword, mode: 'insensitive' } },
-              { companyName: { contains: searchKeyword, mode: 'insensitive' } },
-            ],
-          },
+          OR: [
+            { name: { contains: searchKeyword, mode: 'insensitive' } },
+            { email: { contains: searchKeyword, mode: 'insensitive' } },
+            { companyName: { contains: searchKeyword, mode: 'insensitive' } },
+            {
+              attachments: {
+                some: {
+                  OR: [
+                    {
+                      fileName: {
+                        contains: searchKeyword,
+                        mode: 'insensitive',
+                      },
+                    },
+                    {
+                      fileType: {
+                        contains: searchKeyword,
+                        mode: 'insensitive',
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
         },
       ];
     }
 
-    const [total, attachments] = await Promise.all([
-      this.prisma.attachment.count({ where: where_condition }),
-      this.prisma.attachment.findMany({
+    const [total, users] = await Promise.all([
+      this.prisma.user.count({ where: where_condition }),
+      this.prisma.user.findMany({
         where: where_condition,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
-          user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phoneNumber: true,
+          companyName: true,
+          avatar: true,
+          attachments: {
+            where: query.fileType
+              ? { fileType: { contains: query.fileType, mode: 'insensitive' } }
+              : undefined,
             select: {
               id: true,
-              name: true,
-              email: true,
-              phoneNumber: true,
+              fileName: true,
+              filePath: true,
+              fileType: true,
+              mimeType: true,
+              byteSize: true,
+              createdAt: true,
             },
+            orderBy: { createdAt: 'desc' },
           },
         },
       }),
     ]);
 
-    const formattedAttachments = await Promise.all(
-      attachments.map(async (item) => {
-        let fileUrl: string | null = null;
-        if (item.filePath) {
-          fileUrl = await NajimStorage.signedUrl(item.filePath, {
+    const formattedUsers = await Promise.all(
+      users.map(async (user) => {
+        const formattedAttachments = await Promise.all(
+          user.attachments.map(async (attachment) => {
+            let fileUrl: string | null = null;
+            if (attachment.filePath) {
+              fileUrl = await NajimStorage.signedUrl(attachment.filePath, {
+                expiresIn: 60 * 60 * 24 * 7,
+                signed: true,
+              });
+            }
+
+            return {
+              id: attachment.id,
+              fileName: attachment.fileName,
+              filePath: attachment.filePath,
+              fileUrl,
+              fileType: attachment.fileType,
+              mimeType: attachment.mimeType,
+              byteSize: attachment.byteSize
+                ? Number(attachment.byteSize)
+                : null,
+              createdAt: attachment.createdAt,
+            };
+          }),
+        );
+
+        let avatarUrl: string | null = null;
+        if (user.avatar) {
+          avatarUrl = await NajimStorage.signedUrl(user.avatar, {
             expiresIn: 60 * 60 * 24 * 7,
             signed: true,
           });
         }
 
         return {
-          id: item.id,
-          fileName: item.fileName,
-          filePath: item.filePath,
-          fileUrl,
-          fileType: item.fileType,
-          mimeType: item.mimeType,
-          byteSize: item.byteSize ? Number(item.byteSize) : null,
-          createdAt: item.createdAt,
-          user: item.user
-            ? {
-                id: item.user.id,
-                name: item.user.name,
-                email: item.user.email,
-                phoneNumber: item.user.phoneNumber,
-              }
-            : null,
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          companyName: user.companyName,
+          avatar: avatarUrl,
+          attachments: formattedAttachments,
         };
       }),
     );
@@ -293,10 +390,10 @@ export class UserService {
     return {
       success: true,
       message: 'User attachments retrieved successfully',
-      data: formattedAttachments,
+      data: formattedUsers,
       metaData: {
         totalItems: total,
-        itemCount: formattedAttachments.length,
+        itemCount: formattedUsers.length,
         itemsPerPage: limit,
         totalPages,
         currentPage: page,

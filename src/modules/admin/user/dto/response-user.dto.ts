@@ -118,21 +118,7 @@ export class AdminUserStatsResponseDto {
   data: AdminUserStatsDataDto;
 }
 
-export class AdminUserAttachmentUserDto {
-  @ApiProperty({ example: 'clx1abc...' })
-  id: string;
-
-  @ApiProperty({ example: 'John Doe', nullable: true })
-  name: string | null;
-
-  @ApiProperty({ example: 'john@example.com', nullable: true })
-  email: string | null;
-
-  @ApiProperty({ example: '+1234567890', nullable: true })
-  phoneNumber: string | null;
-}
-
-export class AdminUserAttachmentDto {
+export class AdminUserAttachmentItemDto {
   @ApiProperty({ example: 'att_123' })
   id: string;
 
@@ -159,9 +145,29 @@ export class AdminUserAttachmentDto {
 
   @ApiProperty({ example: '2026-06-20T00:00:00.000Z' })
   createdAt: Date;
+}
 
-  @ApiProperty({ type: AdminUserAttachmentUserDto, nullable: true })
-  user: AdminUserAttachmentUserDto | null;
+export class AdminUserWithAttachmentsDto {
+  @ApiProperty({ example: 'clx1abc...' })
+  id: string;
+
+  @ApiProperty({ example: 'John Doe', nullable: true })
+  name: string | null;
+
+  @ApiProperty({ example: 'john@example.com', nullable: true })
+  email: string | null;
+
+  @ApiProperty({ example: '+1234567890', nullable: true })
+  phoneNumber: string | null;
+
+  @ApiProperty({ example: 'Acme Corp', nullable: true })
+  companyName: string | null;
+
+  @ApiProperty({ example: 'https://storage.../avatar.png', nullable: true })
+  avatar: string | null;
+
+  @ApiProperty({ type: [AdminUserAttachmentItemDto] })
+  attachments: AdminUserAttachmentItemDto[];
 }
 
 export class AdminUserAttachmentListResponse {
@@ -171,8 +177,8 @@ export class AdminUserAttachmentListResponse {
   @ApiProperty({ example: 'User attachments retrieved successfully' })
   message: string;
 
-  @ApiProperty({ type: [AdminUserAttachmentDto] })
-  data: AdminUserAttachmentDto[];
+  @ApiProperty({ type: [AdminUserWithAttachmentsDto] })
+  data: AdminUserWithAttachmentsDto[];
 
   @ApiProperty({ type: AdminUserMetaDataDto })
   metaData: AdminUserMetaDataDto;

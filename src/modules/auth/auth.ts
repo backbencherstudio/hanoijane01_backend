@@ -4,7 +4,7 @@ import { PrismaClient } from 'prisma/generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import appConfig from '../../config/app.config';
 import { MailService } from '../../mail/mail.service';
-import { emailOTP, bearer } from 'better-auth/plugins';
+import { emailOTP, bearer, admin } from 'better-auth/plugins';
 import { createAuthMiddleware, APIError } from 'better-auth/api';
 
 const connectionString = appConfig().database.url;
@@ -152,6 +152,10 @@ export const auth = betterAuth({
 
   plugins: [
     bearer(),
+    admin({
+      defaultRole: 'user',
+      adminRole: ['admin'],
+    }),
     emailOTP({
       otpLength: 5,
       overrideDefaultEmailVerification: true,

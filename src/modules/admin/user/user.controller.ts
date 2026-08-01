@@ -15,11 +15,9 @@ import { Request } from 'express';
 import { UserService } from './user.service';
 import { CreateUserAdminDto, UserStatus } from './dto/create-user.dto';
 import { UpdateUserAdminDto } from './dto/update-user.dto';
-import { QueryUserDto } from './dto/query-user.dto';
-import { QueryUserAttachmentDto } from './dto/query-user-attachment.dto';
+import { QueryUserAttachmentDto, QueryUserDto } from './dto/query-user.dto';
 import {
   ApiBearerAuth,
-  ApiExcludeEndpoint,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -49,7 +47,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Get user dashboard statistics (Admin)',
     description:
-      'Retrieves summary counts for Total Users, Active Users (status=1), Inactive Users (status=0), and Banned Users (status=2).',
+      'Retrieves summary counts for Total Users, Active Users (status=1), Inactive Users (status=0), and Banned Users (status=-1).',
   })
   @ApiResponse({
     status: 200,
@@ -63,14 +61,14 @@ export class UserController {
 
   @ApiOperation({
     summary:
-      'Get all user attachments / documents for Document Review page (Admin)',
+      'Get all user attachments / documents grouped by User (Admin)',
     description:
-      'Retrieves a paginated list of user uploaded attachments (documents) with search (user name, email, company name, file name, file type), optional filters (userId, fileType), and pagination (page, limit). Returns file access URLs and basic user details (id, name, email, phoneNumber).',
+      'Retrieves a paginated list of users with their uploaded attachments (documents). Supports search (user name, email, company name, file name, file type), optional filters (userId, fileType), and pagination (page, limit). Returns user details along with an attachments array containing file access URLs.',
   })
   @ApiResponse({
     status: 200,
     type: AdminUserAttachmentListResponse,
-    description: 'Paginated list of user attachments',
+    description: 'Paginated list of users grouped with attachments',
   })
   @Get('attachments')
   async getAttachments(@Query() query: QueryUserAttachmentDto) {
@@ -80,7 +78,7 @@ export class UserController {
   @ApiOperation({
     summary: 'Create a new user / admin profile',
     description:
-      'Creates a new user record in the database with name, email, password, status (1=Active, 0=Inactive, 2=Banned), and type role (user | admin).',
+      'Creates a new user record in the database with name, email, password, status (1=Active, 0=Inactive, -1=Banned), and type role (user | admin).',
   })
   @ApiResponse({
     status: 201,
@@ -133,50 +131,6 @@ export class UserController {
     return this.userService.findAll(query);
   }
 
-  @ApiExcludeEndpoint()
-  @ApiOperation({
-    summary: 'Approve a user',
-    description:
-      "Sets the user's approval date to the current time, granting them full access as a verified user.",
-  })
-  @ApiParam({
-    name: 'userId',
-    type: String,
-    required: true,
-    description: 'The unique ID of the user record to approve.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: AdminUserActionResponse,
-    description: 'User approved successfully',
-  })
-  @Post(':userId/approve')
-  async approve(@Param('userId') userId: string) {
-    return this.userService.approve(userId);
-  }
-
-  @ApiExcludeEndpoint()
-  @ApiOperation({
-    summary: 'Reject/Unapprove a user',
-    description:
-      "Clears the user's approval timestamp (sets approvedAt to null), blocking or unapproving their access.",
-  })
-  @ApiParam({
-    name: 'userId',
-    type: String,
-    required: true,
-    description: 'The unique ID of the user record to reject or unapprove.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: AdminUserActionResponse,
-    description: 'User rejected successfully',
-  })
-  @Post(':userId/reject')
-  async reject(@Param('userId') userId: string) {
-    return this.userService.reject(userId);
-  }
-
   @ApiOperation({
     summary: 'Get details of a user by id',
     description:
@@ -218,8 +172,13 @@ export class UserController {
   async update(
     @Param('userId') userId: string,
     @Body() updateUserDto: UpdateUserAdminDto,
+    @Req() req: Request,
   ) {
-    return this.userService.update(userId, updateUserDto);
+    return this.userService.update(
+      userId,
+      updateUserDto,
+      req.headers as HeadersInit,
+    );
   }
 
   @ApiOperation({
