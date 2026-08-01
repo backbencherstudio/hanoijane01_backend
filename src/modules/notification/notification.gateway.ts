@@ -13,7 +13,13 @@ import { auth } from '../auth/auth';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: [
+      appConfig().app.client_app_url,
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://10.10.9.45:3000',
+      'https://itba-expo.vercel.app',
+    ],
   },
 })
 @Injectable()
@@ -90,9 +96,6 @@ export class NotificationGateway
     this.logger.log('WebSocket Gateway initialized');
   }
 
-  /**
-   * Helper: Extracts headers and token from Socket handshake
-   */
   private extractHeaders(client: Socket): Headers {
     const reqHeaders = new Headers();
     const handshakeHeaders = client.handshake.headers;
@@ -122,9 +125,6 @@ export class NotificationGateway
     return reqHeaders;
   }
 
-  /**
-   * Connection Authorization: Validates Better Auth session token
-   */
   async handleConnection(client: Socket) {
     try {
       const headers = this.extractHeaders(client);
@@ -165,27 +165,23 @@ export class NotificationGateway
     this.logger.log(`Socket ${client.id} disconnected`);
   }
 
-  /**
-   * Target emission to a specific receiverId room ONLY.
-   */
   async sendNotificationToUser(receiverId: string, payload: any) {
     if (!receiverId) return;
 
-    // 1. Direct Socket Emit to room receiverId
-    if (this.server) {
-      this.server.to(receiverId).emit('notification', payload);
-    }
-
-    // 2. Redis pub/sub for multi-instance scaling
     if (this.redisPubClient && this.redisPubClient.status === 'ready') {
       try {
         await this.redisPubClient.publish(
           'notification_channel',
           JSON.stringify({ receiverId, data: payload }),
         );
+        return;
       } catch (err) {
         this.logger.warn(`Failed to publish to redis: ${err}`);
       }
+    }
+
+    if (this.server) {
+      this.server.to(receiverId).emit('notification', payload);
     }
   }
 }
