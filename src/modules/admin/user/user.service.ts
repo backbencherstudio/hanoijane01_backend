@@ -289,6 +289,7 @@ export class UserService {
 
     const searchKeyword = query.search;
     const where_condition: Prisma.UserWhereInput = {
+      type: 'user',
       deletedAt: null,
       attachments: {
         some: query.fileType

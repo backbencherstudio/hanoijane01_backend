@@ -9,6 +9,7 @@ import { Server, Socket } from 'socket.io';
 import { OnModuleInit, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 import appConfig from '../../config/app.config';
+import { auth } from '../auth/auth';
 
 @WebSocketGateway({
   cors: {
@@ -89,18 +90,74 @@ export class NotificationGateway
     this.logger.log('WebSocket Gateway initialized');
   }
 
-  async handleConnection(client: Socket) {
-    const userId =
-      (client.handshake.query.userId as string) ||
-      (client.handshake.auth?.userId as string);
+  /**
+   * Helper: Extracts headers and token from Socket handshake
+   */
+  private extractHeaders(client: Socket): Headers {
+    const reqHeaders = new Headers();
+    const handshakeHeaders = client.handshake.headers;
 
-    if (userId) {
-      client.join(userId);
+    for (const [key, value] of Object.entries(handshakeHeaders)) {
+      if (value) {
+        if (Array.isArray(value)) {
+          value.forEach((v) => reqHeaders.append(key, v));
+        } else {
+          reqHeaders.set(key, value);
+        }
+      }
+    }
+
+    const authToken =
+      client.handshake.auth?.token ||
+      client.handshake.auth?.authorization ||
+      client.handshake.query?.token;
+
+    if (authToken && !reqHeaders.has('authorization')) {
+      const authHeader = String(authToken).startsWith('Bearer ')
+        ? String(authToken)
+        : `Bearer ${authToken}`;
+      reqHeaders.set('authorization', authHeader);
+    }
+
+    return reqHeaders;
+  }
+
+  /**
+   * Connection Authorization: Validates Better Auth session token
+   */
+  async handleConnection(client: Socket) {
+    try {
+      const headers = this.extractHeaders(client);
+      const session = await auth.api.getSession({ headers });
+
+      if (!session || !session.user) {
+        this.logger.warn(
+          `Unauthorized WebSocket connection attempt from socket ${client.id}`,
+        );
+        client.emit('error', { message: 'Unauthorized WebSocket connection' });
+        client.disconnect(true);
+        return;
+      }
+
+      if ((session.user as any)?.status === -1) {
+        this.logger.warn(
+          `Banned user ${session.user.id} tried connecting to WebSocket`,
+        );
+        client.emit('error', { message: 'Your account has been banned' });
+        client.disconnect(true);
+        return;
+      }
+
+      const authenticatedUserId = session.user.id;
+      client.data.user = session.user;
+      client.join(authenticatedUserId);
+
       this.logger.log(
-        `User ${userId} joined room ${userId} (socket ${client.id})`,
+        `User ${authenticatedUserId} (${session.user.email}) authenticated & joined room ${authenticatedUserId} (socket ${client.id})`,
       );
-    } else {
-      this.logger.log(`Socket ${client.id} connected without userId`);
+    } catch (err: any) {
+      this.logger.error(`WebSocket connection auth error: ${err.message}`);
+      client.disconnect(true);
     }
   }
 
