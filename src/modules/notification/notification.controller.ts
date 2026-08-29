@@ -43,7 +43,7 @@ export class NotificationController {
   })
   @Get()
   async findAll(@Req() req: Request, @Query() query: QueryNotificationDto) {
-    const user_id = req.user.id;
+    const user_id = (req.user as any).id;
     return this.notificationService.findAll(user_id, query);
   }
 
@@ -67,7 +67,7 @@ export class NotificationController {
     @Req() req: Request,
     @Param('notificationId') notificationId: string,
   ) {
-    const user_id = req.user.id;
+    const user_id = (req.user as any).id;
     return this.notificationService.remove(notificationId, user_id);
   }
 
@@ -91,7 +91,7 @@ export class NotificationController {
     @Req() req: Request,
     @Param('notificationId') notificationId: string,
   ) {
-    const user_id = req.user.id;
+    const user_id = (req.user as any).id;
     return this.notificationService.markAsRead(notificationId, user_id);
   }
 
@@ -107,7 +107,7 @@ export class NotificationController {
     description: 'All notifications marked as read successfully',
   })
   async markAllAsRead(@Req() req: Request) {
-    const user_id = req.user.id;
+    const user_id = (req.user as any).id;
     return this.notificationService.markAllAsRead(user_id);
   }
 
@@ -123,7 +123,7 @@ export class NotificationController {
   })
   @Delete()
   async removeAll(@Req() req: Request) {
-    const user_id = req.user.id;
+    const user_id = (req.user as any).id;
     return this.notificationService.removeAll(user_id);
   }
 }

@@ -8,7 +8,7 @@ import {
 
 //internal imports
 import appConfig from '../../config/app.config';
-import { Prisma } from 'prisma/generated/client';
+import { Prisma, Attachment } from 'prisma/generated/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRepository } from '../../common/repository/user/user.repository';
 import { UpdateAuthDto } from './dto/update-auth.dto';
@@ -18,7 +18,6 @@ import {
 } from './dto/upload-attachment.dto';
 import { NajimStorage } from '../../common/lib/Disk/NajimStorage';
 import { StripePayment } from '../../common/lib/Payment/stripe/StripePayment';
-import { Attachment } from 'prisma/generated/browser';
 
 @Injectable()
 export class AuthService {

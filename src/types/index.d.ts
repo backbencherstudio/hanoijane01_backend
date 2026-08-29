@@ -1,7 +1,15 @@
-declare namespace Express {
-  export interface Request {
-    user?: import('prisma/generated/client').User;
-    session?: any;
-    rawBody: any;
+declare global {
+  namespace Express {
+    interface User {
+      id?: string;
+      [key: string]: any;
+    }
+    interface Request {
+      user?: User;
+      session?: any;
+      rawBody?: any;
+    }
   }
 }
+
+export {};

@@ -70,6 +70,14 @@ export class UserRepository {
    * @returns
    */
   async createSuAdminUser({ email, password }) {
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: email },
+    });
+
+    if (existingUser) {
+      return existingUser;
+    }
+
     password = await bcrypt.hash(password, appConfig().security.salt);
 
     const user = await this.prisma.user.create({

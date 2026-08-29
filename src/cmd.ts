@@ -6,6 +6,9 @@ import { ConfigModule } from '@nestjs/config';
 import appConfig from './config/app.config';
 import { PrismaModule } from './prisma/prisma.module';
 import { RepositoryModule } from './common/repository/repository.module';
+import { BullModule } from '@nestjs/bullmq';
+import { MailModule } from './mail/mail.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { PrismaService } from './prisma/prisma.service';
 import { SeedCommand } from './command/seed.command';
 import { ExhibitionSeedCommand } from './command/exhibition-seed.command';
@@ -16,7 +19,16 @@ import { ExhibitionSeedCommand } from './command/exhibition-seed.command';
       isGlobal: true,
       load: [appConfig],
     }),
+    BullModule.forRoot({
+      connection: {
+        host: appConfig().redis.host,
+        password: appConfig().redis.password,
+        port: +appConfig().redis.port,
+      },
+    }),
+    MailModule,
     PrismaModule,
+    NotificationModule,
     RepositoryModule,
   ],
   providers: [SeedCommand, ExhibitionSeedCommand, PrismaService],
