@@ -1,37 +1,39 @@
 import { MailerModule } from '@nestjs-modules/mailer';
 import { Global, Module } from '@nestjs/common';
 import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
-import { MailService } from './mail.service';
-import appConfig from '../config/app.config';
 import { BullModule } from '@nestjs/bullmq';
+import { join } from 'path';
+import { MailService } from './mail.service';
 import { MailProcessor } from './processors/mail.processor';
+import appConfig from '../config/app.config';
 
 @Global()
 @Module({
   imports: [
-    MailerModule.forRoot({
-      // transport: 'smtps://user@example.com:topsecret@smtp.example.com',
-      // or
-      transport: {
-        host: appConfig().mail.host,
-        port: +appConfig().mail.port,
-        secure: false,
-        auth: {
-          user: appConfig().mail.user,
-          pass: appConfig().mail.password,
-        },
-      },
-      defaults: {
-        from: appConfig().mail.from,
-      },
-      template: {
-        // dir: join(__dirname, 'templates'),
-        dir: process.cwd() + '/dist/mail/templates/',
-        // adapter: new HandlebarsAdapter(), // or new PugAdapter() or new EjsAdapter()
-        adapter: new EjsAdapter(),
-        options: {
-          // strict: true,
-        },
+    MailerModule.forRootAsync({
+      useFactory: () => {
+        const config = appConfig();
+        return {
+          transport: {
+            host: config.mail.host,
+            port: Number(config.mail.port),
+            secure: Number(config.mail.port) === 465,
+            auth: {
+              user: config.mail.user,
+              pass: config.mail.password,
+            },
+          },
+          defaults: {
+            from: config.mail.from,
+          },
+          template: {
+            dir: join(process.cwd(), 'src/mail/templates'),
+            adapter: new EjsAdapter(),
+            options: {
+              strict: false,
+            },
+          },
+        };
       },
     }),
     BullModule.registerQueue({
