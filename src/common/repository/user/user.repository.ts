@@ -69,22 +69,51 @@ export class UserRepository {
    * @param param0
    * @returns
    */
-  async createSuAdminUser({ email, password }) {
+  async createSuAdminUser({
+    email,
+    password,
+    name = 'Admin User',
+    type = 'admin',
+    role = 'admin',
+  }: {
+    email: string;
+    password?: string;
+    name?: string;
+    type?: string;
+    role?: string;
+  }) {
     const existingUser = await this.prisma.user.findFirst({
       where: { email: email },
     });
 
-    if (existingUser) {
-      return existingUser;
-    }
+    const hashedPassword = password
+      ? await bcrypt.hash(password, appConfig().security.salt)
+      : await bcrypt.hash('12345678', appConfig().security.salt);
 
-    password = await bcrypt.hash(password, appConfig().security.salt);
+    if (existingUser) {
+      return await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          status: 1,
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
+          type: type,
+          role: role,
+          ...(password ? { password: hashedPassword } : {}),
+        },
+      });
+    }
 
     const user = await this.prisma.user.create({
       data: {
+        name: name,
         email: email,
-        password: password,
-        type: 'su_admin',
+        password: hashedPassword,
+        type: type,
+        role: role,
+        status: 1,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
       },
     });
     return user;
