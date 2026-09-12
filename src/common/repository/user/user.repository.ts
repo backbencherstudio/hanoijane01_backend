@@ -69,6 +69,11 @@ export class UserRepository {
    * @param param0
    * @returns
    */
+  /**
+   * Create su admin user
+   * @param param0
+   * @returns
+   */
   async createSuAdminUser({
     email,
     password,
@@ -90,8 +95,10 @@ export class UserRepository {
       ? await bcrypt.hash(password, appConfig().security.salt)
       : await bcrypt.hash('12345678', appConfig().security.salt);
 
+    let user;
+
     if (existingUser) {
-      return await this.prisma.user.update({
+      user = await this.prisma.user.update({
         where: { id: existingUser.id },
         data: {
           status: 1,
@@ -99,23 +106,47 @@ export class UserRepository {
           emailVerifiedAt: new Date(),
           type: type,
           role: role,
-          ...(password ? { password: hashedPassword } : {}),
+          password: hashedPassword,
+        },
+      });
+    } else {
+      user = await this.prisma.user.create({
+        data: {
+          name: name,
+          email: email,
+          password: hashedPassword,
+          type: type,
+          role: role,
+          status: 1,
+          emailVerified: true,
+          emailVerifiedAt: new Date(),
         },
       });
     }
 
-    const user = await this.prisma.user.create({
-      data: {
-        name: name,
-        email: email,
+    // Keep Better Auth's credential Account row in sync.
+    // Better Auth reads the password hash from `Account` (providerId = 'credential'),
+    // not from `User.password`. Without this row, sign-in fails with
+    // "Invalid email or password" even though the user exists.
+    await this.prisma.account.upsert({
+      where: {
+        providerId_accountId: {
+          providerId: 'credential',
+          accountId: email,
+        },
+      },
+      update: {
         password: hashedPassword,
-        type: type,
-        role: role,
-        status: 1,
-        emailVerified: true,
-        emailVerifiedAt: new Date(),
+        userId: user.id,
+      },
+      create: {
+        userId: user.id,
+        providerId: 'credential',
+        accountId: email,
+        password: hashedPassword,
       },
     });
+
     return user;
   }
 

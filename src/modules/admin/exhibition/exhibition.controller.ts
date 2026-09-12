@@ -33,6 +33,7 @@ import {
   StandListResponseDto,
 } from './dto/response-stand.dto';
 import { UpdateLatestExhibitionDto } from './dto/update-exhibition.dto';
+import { UpdateStandAvailabilityDto } from './dto/update-stand-availability.dto';
 
 @ApiTags('Admin / Exhibition')
 @ApiBearerAuth()
@@ -115,5 +116,27 @@ export class ExhibitionController {
   @Get('stands')
   getStandsList(@Query() query: GetStandsQueryDto) {
     return this.exhibitionService.getStandsList(query);
+  }
+
+  @ApiOperation({
+    summary: 'Block or unblock a stand (Admin)',
+    description:
+      'Sets the availability of a single stand. Pass `isAvailable: false` to block (hide from booking) or `isAvailable: true` to unblock. Returns the updated stand.',
+  })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    required: true,
+    description: 'The unique ID of the stand.',
+  })
+  @Patch('stands/:id/availability')
+  updateStandAvailability(
+    @Param('id') id: string,
+    @Body() dto: UpdateStandAvailabilityDto,
+  ) {
+    return this.exhibitionService.updateStandAvailability(
+      id,
+      dto.isAvailable,
+    );
   }
 }

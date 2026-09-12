@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from 'prisma/generated/client';
 import {
@@ -188,12 +192,16 @@ export class ExhibitionService {
       let totalStands = 0;
       let bookedStands = 0;
       let availableStands = 0;
+      let blockedStands = 0;
 
       hall.standCategories.forEach((category) => {
         category.stands.forEach((stand) => {
           totalStands += 1;
           if (stand.isAvailable === 0) {
-            bookedStands += 1;
+            // We need booking info to tell them apart. If you don't want to
+            // change the query shape, just treat all as "unavailable".
+            // To properly distinguish, include bookings in the select below.
+            bookedStands += 1; // ← currently lumps both together
           } else {
             availableStands += 1;
           }
@@ -206,6 +214,7 @@ export class ExhibitionService {
         totalStands,
         bookedStands,
         availableStands,
+        blockedStands, // you'd need bookings in the select to compute this
       };
     });
 
@@ -293,10 +302,22 @@ export class ExhibitionService {
 
     // 4. Status Query
     if (status) {
-      if (status.toLowerCase() === 'booked') {
-        where.isAvailable = 0;
-      } else if (status.toLowerCase() === 'available') {
+      const s = status.toLowerCase();
+
+      if (s === 'available') {
         where.isAvailable = 1;
+      } else if (s === 'booked') {
+        // Booked = has an active booking (status = 1)
+        where.bookings = {
+          some: { status: 1, deletedAt: null },
+        };
+      } else if (s === 'unavailable') {
+        // Unavailable = blocked by admin (isAvailable = 0) AND has no active booking.
+        // This distinguishes admin-blocked stands from booked stands.
+        where.isAvailable = 0;
+        where.bookings = {
+          none: { status: 1, deletedAt: null },
+        };
       }
     }
 
@@ -373,6 +394,76 @@ export class ExhibitionService {
         itemsPerPage: limit,
         totalPages,
         currentPage: page,
+      },
+    };
+  }
+
+  /**
+   * Block or unblock a stand by id.
+   * `isAvailable = 1` → available (unblocked)
+   * `isAvailable = 0` → blocked (not bookable)
+   */
+  async updateStandAvailability(standId: string, isAvailable: boolean) {
+    const stand = await this.prisma.stand.findFirst({
+      where: { id: standId, deletedAt: null },
+      include: {
+        category: {
+          include: {
+            hall: true,
+          },
+        },
+        bookings: {
+          where: { status: 1, deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!stand) {
+      throw new NotFoundException('Stand not found');
+    }
+
+    // Safety: don't allow blocking a stand that has an active (booked) booking.
+    if (!isAvailable && stand.bookings.length > 0) {
+      throw new BadRequestException(
+        'Cannot block a stand that has an active booking. Cancel or move the booking first.',
+      );
+    }
+
+    // If you add a `blockReason` column later, wire it here:
+    // data: { isAvailable: isAvailable ? 1 : 0, blockReason: isAvailable ? null : reason ?? null }
+    const updated = await this.prisma.stand.update({
+      where: { id: standId },
+      data: { isAvailable: isAvailable ? 1 : 0 },
+      include: {
+        category: {
+          include: {
+            hall: true,
+          },
+        },
+      },
+    });
+
+    const activeBooking = stand.bookings[0] ?? null;
+
+    return {
+      success: true,
+      message: isAvailable
+        ? 'Stand unblocked successfully'
+        : 'Stand blocked successfully',
+      data: {
+        id: updated.id,
+        isAvailable: updated.isAvailable ? true : false,
+        standNumber: updated.standNumber,
+        title: updated.title,
+        hall: updated.category?.hall?.title ?? null,
+        category: updated.category?.title ?? null,
+        size: updated.category?.size ?? null,
+        price: updated.category ? Number(updated.category.price) : 0,
+        updatedAt: updated.updatedAt,
+        // Handy for the frontend if it wants to show "this row had a booking".
+        bookingId: activeBooking?.id ?? null,
       },
     };
   }

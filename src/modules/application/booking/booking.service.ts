@@ -21,11 +21,14 @@ export class BookingService {
     signature?: Express.Multer.File,
   ) {
     const stand = await this.prisma.stand.findUnique({
-      where: {
-        id: createBookingDto.standId,
-      },
+      where: { id: createBookingDto.standId },
       include: {
         category: true,
+        bookings: {
+          where: { status: 1, deletedAt: null },
+          select: { id: true },
+          take: 1,
+        },
       },
     });
 
@@ -35,20 +38,21 @@ export class BookingService {
       );
     }
     if (stand.isAvailable === 0) {
+      // Cancel any stale unpaid booking this user has for this stand
       await this.prisma.booking.updateMany({
         where: {
           userId: session.user.id,
           standId: createBookingDto.standId,
           paymentStatus: 'unpaid',
         },
-        data: {
-          paymentStatus: 'canceled',
-          status: -1,
-        },
+        data: { paymentStatus: 'canceled', status: -1 },
       });
 
+      const hasActiveBooking = stand.bookings.length > 0;
       throw new BadRequestException(
-        `Stand with ID ${createBookingDto.standId} is already booked`,
+        hasActiveBooking
+          ? `Stand ${stand.standNumber ?? ''} is already booked`
+          : `Stand ${stand.standNumber ?? ''} is currently unavailable for booking`,
       );
     }
     if (!stand.category) {

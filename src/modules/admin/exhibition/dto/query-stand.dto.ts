@@ -47,9 +47,10 @@ export class GetStandsQueryDto {
   category?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by status: available or booked',
+    description:
+      'Filter by status: available, booked, or unavailable (blocked by admin).',
     example: 'available',
-    enum: ['available', 'booked'],
+    enum: ['available', 'booked', 'unavailable'],
   })
   @IsOptional()
   @IsString()

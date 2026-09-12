@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { PrismaClient } from 'prisma/generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { hash, compare } from 'bcrypt';  
 import appConfig from '../../config/app.config';
 import { MailService } from '../../mail/mail.service';
 import { emailOTP, bearer, admin } from 'better-auth/plugins';
@@ -125,6 +126,16 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: true,
     autoSignIn: false,
+    password: {
+      hash: (password: string) => hash(password, appConfig().security.salt),
+      verify: ({
+        hash: storedHash,
+        password,
+      }: {
+        hash: string;
+        password: string;
+      }) => compare(password, storedHash),
+    },
     sendResetPassword: async ({ user, url }) => {
       if (MailService.instance) {
         await MailService.instance.sendResetPasswordEmail(
