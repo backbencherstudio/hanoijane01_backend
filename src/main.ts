@@ -13,14 +13,15 @@ import { CustomExceptionFilter } from './common/exception/custom-exception.filte
 import { NajimStorage } from './common/lib/Disk/NajimStorage';
 import { DiskType } from './common/lib/Disk/Option';
 import { json, urlencoded } from 'express';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
 
-  app.use(json({ limit: '10mb' }));
-  app.use(urlencoded({ extended: true, limit: '10mb' }));
+  // app.use(json({ limit: '10mb' }));
+  // app.use(urlencoded({ extended: true, limit: '10mb' }));
 
   // Handle raw body for webhooks
   // app.use('/payment/stripe/webhook', express.raw({ type: 'application/json' }));

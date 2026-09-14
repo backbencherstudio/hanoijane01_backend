@@ -112,16 +112,20 @@ export class StripeController {
       throw new BadRequestException('Missing stripe-signature header');
     }
 
+    if (!req.rawBody) {
+      this.logger.error('Stripe webhook raw body is missing');
+      throw new BadRequestException('Raw request body is missing');
+    }
+
     let event: any;
+
     try {
-      const payload = req.rawBody
-        ? req.rawBody.toString()
-        : JSON.stringify(req.body);
-      event = this.stripeService.handleWebhook(payload, signature);
-    } catch (err) {
+      event = this.stripeService.handleWebhook(req.rawBody, signature);
+    } catch (err: any) {
       this.logger.error(
         `Stripe Webhook signature verification failed: ${err.message}`,
       );
+
       throw new BadRequestException(`Webhook Error: ${err.message}`);
     }
 
@@ -165,7 +169,12 @@ export class StripeController {
         `Error processing webhook event ${event.type}: ${error.message}`,
         error.stack,
       );
-      return { received: true, processed: false, error: error.message };
+
+      return {
+        received: true,
+        processed: false,
+        error: error.message,
+      };
     }
   }
 }
