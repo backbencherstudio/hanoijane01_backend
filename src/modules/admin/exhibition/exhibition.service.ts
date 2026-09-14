@@ -160,12 +160,8 @@ export class ExhibitionService {
   async getStandsStats(query: GetExhibitionStatsQueryDto) {
     const { exhibitionId } = query;
 
-    const hallWhere: Prisma.HallWhereInput = {
-      deletedAt: null,
-    };
-    if (exhibitionId) {
-      hallWhere.exhibitionId = exhibitionId;
-    }
+    const hallWhere: Prisma.HallWhereInput = { deletedAt: null };
+    if (exhibitionId) hallWhere.exhibitionId = exhibitionId;
 
     const halls = await this.prisma.hall.findMany({
       where: hallWhere,
@@ -180,6 +176,10 @@ export class ExhibitionService {
               select: {
                 id: true,
                 isAvailable: true,
+                bookings: {
+                  where: { deletedAt: null },
+                  select: { status: true, paymentStatus: true },
+                },
               },
             },
           },
@@ -193,15 +193,24 @@ export class ExhibitionService {
       let bookedStands = 0;
       let availableStands = 0;
       let blockedStands = 0;
+      let pendingStands = 0;
 
       hall.standCategories.forEach((category) => {
         category.stands.forEach((stand) => {
           totalStands += 1;
-          if (stand.isAvailable === 0) {
-            // We need booking info to tell them apart. If you don't want to
-            // change the query shape, just treat all as "unavailable".
-            // To properly distinguish, include bookings in the select below.
-            bookedStands += 1; // ← currently lumps both together
+
+          const hasApprovedBooking = stand.bookings.some((b) => b.status === 1);
+          const hasPendingPaidBooking = stand.bookings.some(
+            (b) => b.status === 0 && b.paymentStatus === 'paid',
+          );
+
+          if (hasApprovedBooking) {
+            bookedStands += 1;
+          } else if (stand.isAvailable === 0) {
+            blockedStands += 1; // blocked by admin, no active booking
+          } else if (hasPendingPaidBooking) {
+            pendingStands += 1; // paid but awaiting admin approval
+            availableStands += 1; // still bookable from a data standpoint
           } else {
             availableStands += 1;
           }
@@ -214,7 +223,8 @@ export class ExhibitionService {
         totalStands,
         bookedStands,
         availableStands,
-        blockedStands, // you'd need bookings in the select to compute this
+        blockedStands,
+        pendingStands, // new
       };
     });
 
@@ -355,7 +365,13 @@ export class ExhibitionService {
 
     const items = stands
       .map((stand) => {
-        const activeBooking = stand.bookings[0] || null;
+        const approvedBooking =
+          stand.bookings.find((b) => b.status === 1) || null;
+        const pendingPaidBooking =
+          stand.bookings.find(
+            (b) => b.status === 0 && b.paymentStatus === 'paid',
+          ) || null;
+
         return {
           id: stand.id,
           isAvailable: stand.isAvailable ? true : false,
@@ -365,12 +381,31 @@ export class ExhibitionService {
           category: stand.category?.title || null,
           size: stand.category?.size || null,
           price: stand.category ? Number(stand.category.price) : 0,
-          bookingId: activeBooking?.id || null,
-          bookedBy: activeBooking
+
+          bookingId: approvedBooking?.id || null,
+          bookedBy: approvedBooking
             ? {
                 name:
-                  activeBooking.userName || activeBooking.user?.name || null,
-                email: activeBooking.email || activeBooking.user?.email || null,
+                  approvedBooking.userName ||
+                  approvedBooking.user?.name ||
+                  null,
+                email:
+                  approvedBooking.email || approvedBooking.user?.email || null,
+              }
+            : null,
+
+          // NEW: paid but awaiting approval
+          pendingBookingId: pendingPaidBooking?.id || null,
+          pendingPaidBy: pendingPaidBooking
+            ? {
+                name:
+                  pendingPaidBooking.userName ||
+                  pendingPaidBooking.user?.name ||
+                  null,
+                email:
+                  pendingPaidBooking.email ||
+                  pendingPaidBooking.user?.email ||
+                  null,
               }
             : null,
         };
@@ -427,7 +462,7 @@ export class ExhibitionService {
     // Safety: don't allow blocking a stand that has an active (booked) booking.
     if (!isAvailable && stand.bookings.length > 0) {
       throw new BadRequestException(
-        'Cannot block a stand that has an active booking. Cancel or move the booking first.',
+        'Cannot block a stand that has an active booking.',
       );
     }
 

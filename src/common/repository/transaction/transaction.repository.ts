@@ -150,14 +150,30 @@ export class TransactionRepository {
       paymentStatus === 'canceled' ||
       paymentStatus === 'refunded';
 
-    // Race Condition Check: If stand was already locked by another user before this payment finished
-    if (isPaid && booking.standId && booking.stand) {
-      if (booking.stand.isAvailable === 0 && booking.paymentStatus !== 'paid') {
+    // Race Condition Check:
+    // Since the stand is NOT blocked on payment anymore (only admin approval blocks it),
+    // we detect conflict by checking if ANOTHER booking for the same stand is already paid.
+    if (
+      isPaid &&
+      booking.standId &&
+      booking.stand &&
+      booking.paymentStatus !== 'paid'
+    ) {
+      const conflictingPaidBooking = await this.prisma.booking.findFirst({
+        where: {
+          standId: booking.standId,
+          id: { not: bookingId },
+          paymentStatus: 'paid',
+          deletedAt: null,
+          status: { not: -1 }, // ignore already-rejected ones
+        },
+      });
+
+      if (conflictingPaidBooking) {
         this.logger.error(
-          `CONCURRENCY CONFLICT: Stand ${booking.standId} was already claimed by another user before Booking ${bookingId} finalized!`,
+          `CONCURRENCY CONFLICT: Stand ${booking.standId} already has paid booking ${conflictingPaidBooking.id} before Booking ${bookingId} finalized!`,
         );
 
-        // Update booking to conflict state
         await this.prisma.booking.update({
           where: { id: bookingId },
           data: {
@@ -175,11 +191,12 @@ export class TransactionRepository {
     }
 
     // 1. Update Booking record
+    // NOTE: paid ≠ booked. Booking stays PENDING (status unchanged) until admin accepts it.
     const updatedBooking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
         paymentStatus,
-        status: isPaid ? 1 : isFailedOrCanceled ? -1 : booking.status,
+        status: isFailedOrCanceled ? -1 : booking.status, // paid keeps current status (0 = PENDING)
         stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
         stripeCheckoutSessionId:
           checkoutSessionId || booking.stripeCheckoutSessionId,
@@ -188,32 +205,15 @@ export class TransactionRepository {
       },
     });
 
-    // 2. Update Stand availability and cancel all other pending/unpaid bookings for this stand
-    if (booking.standId) {
+    // 2. Stand availability
+    // - On failure/cancel/refund: release the stand (isAvailable = 1).
+    // - On payment success: DO NOT block the stand here. Admin accept() does that.
+    // - Do NOT auto-cancel other unpaid bookings on paid — admin decides the winner.
+    if (booking.standId && isFailedOrCanceled) {
       await this.prisma.stand.update({
         where: { id: booking.standId },
-        data: {
-          isAvailable: isPaid
-            ? 0
-            : isFailedOrCanceled
-              ? 1
-              : (booking.stand?.isAvailable ?? 1),
-        },
+        data: { isAvailable: 1 },
       });
-
-      if (isPaid) {
-        await this.prisma.booking.updateMany({
-          where: {
-            standId: booking.standId,
-            id: { not: bookingId },
-            paymentStatus: 'unpaid',
-          },
-          data: {
-            paymentStatus: 'canceled',
-            status: -1,
-          },
-        });
-      }
     }
 
     // 3. Upsert PaymentTransaction record for ledger
@@ -289,22 +289,22 @@ export class TransactionRepository {
         await this.notificationService.sendNotification({
           type: 'payment_success',
           title: 'Payment Successful',
-          text: `Your payment of €${formattedAmount} for ${standName} was successful.`,
+          text: `Your payment of €${formattedAmount} for ${standName} was received and is pending admin approval.`,
           receiverIds: booking.userId,
           entityId: bookingId,
           sendEmail: true,
-          emailSubject: 'Payment Successful - Booking Confirmed',
+          emailSubject: 'Payment Successful - Awaiting Approval',
         });
       }
 
       await this.notificationService.sendNotification({
         type: 'payment_success',
         title: 'New Payment Received',
-        text: `Payment of €${formattedAmount} for ${standName} was successfully processed.`,
+        text: `Payment of €${formattedAmount} for ${standName} was received and is pending approval.`,
         receiverIds: null,
         entityId: bookingId,
         sendEmail: true,
-        emailSubject: 'New Stand Booking Payment Received',
+        emailSubject: 'New Stand Booking Payment Received (Pending Approval)',
       });
     } else if (paymentStatus === 'failed') {
       if (booking.userId) {

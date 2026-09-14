@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from 'prisma/generated/client';
 import {
   GetBookingStatsQueryDto,
   GetBookingsQueryDto,
 } from './dto/query-booking.dto';
+import { RejectBookingDto } from './dto/action-booking.dto';
 
 @Injectable()
 export class BookingService {
@@ -296,6 +297,116 @@ export class BookingService {
       success: true,
       message: 'Booking details fetched successfully',
       data,
+    };
+  }
+
+  /**
+   * Accept a booking:
+   * - booking.status = 1  (booked)
+   * - booking.paymentStatus = 'paid'
+   * - booking.paidAt = now (if not set)
+   * - stand.isAvailable = 0 (stand becomes unavailable)
+   */
+  async accept(id: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { stand: true },
+    });
+
+    if (!booking || booking.deletedAt) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    if (booking.status === 1) {
+      throw new BadRequestException('Booking is already accepted');
+    }
+
+    if (booking.status === -1) {
+      throw new BadRequestException(
+        'Rejected booking cannot be accepted. Please restore it first.',
+      );
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedBooking = await tx.booking.update({
+        where: { id },
+        data: {
+          status: 1,
+          paymentStatus: 'paid',
+          paidAt: booking.paidAt ?? new Date(),
+        },
+      });
+
+      if (booking.standId) {
+        await tx.stand.update({
+          where: { id: booking.standId },
+          data: { isAvailable: 0 },
+        });
+      }
+
+      return updatedBooking;
+    });
+
+    return {
+      success: true,
+      message: 'Booking accepted successfully',
+      data: {
+        id: result.id,
+        status: 'BOOKED',
+        paymentStatus: (result.paymentStatus || 'PAID').toUpperCase(),
+      },
+    };
+  }
+
+  /**
+   * Reject a booking:
+   * - booking.status = -1 (canceled / rejected)
+   * - booking.paymentStatus = 'rejected'
+   * - stand.isAvailable = 1 (stand becomes available again)
+   */
+  async reject(id: string, dto: RejectBookingDto) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+      include: { stand: true },
+    });
+
+    if (!booking || booking.deletedAt) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
+
+    if (booking.status === -1) {
+      throw new BadRequestException('Booking is already rejected');
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedBooking = await tx.booking.update({
+        where: { id },
+        data: {
+          status: -1,
+          paymentStatus: 'rejected',
+          // If you want to store the reason, add a field to the Booking model
+          // e.g. rejectionReason: dto.reason ?? null,
+        },
+      });
+
+      if (booking.standId) {
+        await tx.stand.update({
+          where: { id: booking.standId },
+          data: { isAvailable: 1 },
+        });
+      }
+
+      return updatedBooking;
+    });
+
+    return {
+      success: true,
+      message: 'Booking rejected successfully',
+      data: {
+        id: result.id,
+        status: 'REJECTED',
+        paymentStatus: (result.paymentStatus || 'REJECTED').toUpperCase(),
+      },
     };
   }
 }

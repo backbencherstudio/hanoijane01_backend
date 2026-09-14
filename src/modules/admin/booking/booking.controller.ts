@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Query, Patch, HttpCode, HttpStatus, Body } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -20,6 +20,7 @@ import {
   GetBookingStatsQueryDto,
   GetBookingsQueryDto,
 } from './dto/query-booking.dto';
+import { RejectBookingDto } from './dto/action-booking.dto';
 
 @ApiTags('Admin / Booking')
 @ApiBearerAuth()
@@ -78,5 +79,46 @@ export class BookingController {
   @Get(':bookingId')
   findOne(@Param('bookingId') bookingId: string) {
     return this.bookingService.findOne(bookingId);
+  }
+
+  @ApiOperation({
+    summary: 'Accept a booking (Admin)',
+    description:
+      'Approves a pending booking. Sets booking status to BOOKED, payment status to PAID, and marks the stand as unavailable.',
+  })
+  @ApiParam({
+    name: 'bookingId',
+    type: String,
+    required: true,
+    description: 'The unique ID of the booking record',
+  })
+  @ApiResponse({ status: 404, description: 'Booking not found' })
+  @ApiResponse({ status: 400, description: 'Booking cannot be accepted' })
+  @Patch(':bookingId/accept')
+  @HttpCode(HttpStatus.OK)
+  accept(@Param('bookingId') bookingId: string) {
+    return this.bookingService.accept(bookingId);
+  }
+
+  @ApiOperation({
+    summary: 'Reject a booking (Admin)',
+    description:
+      'Rejects a booking. Sets booking status to REJECTED (canceled), payment status to REJECTED, and frees up the stand.',
+  })
+  @ApiParam({
+    name: 'bookingId',
+    type: String,
+    required: true,
+    description: 'The unique ID of the booking record',
+  })
+  @ApiResponse({ status: 404, description: 'Booking not found' })
+  @ApiResponse({ status: 400, description: 'Booking cannot be rejected' })
+  @Patch(':bookingId/reject')
+  @HttpCode(HttpStatus.OK)
+  reject(
+    @Param('bookingId') bookingId: string,
+    @Body() body: RejectBookingDto,
+  ) {
+    return this.bookingService.reject(bookingId, body);
   }
 }
