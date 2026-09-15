@@ -40,22 +40,24 @@ export class MailService {
   // send otp code for email verification
   async sendOtpCodeToEmail({ name, email, otp }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
+      const from = `${process.env.APP_NAME || 'ITBA Expo'} <${appConfig().mail.from}>`;
       const subject = 'Email Verification';
 
-      // add to queue
       await this.queue.add('sendOtpCodeToEmail', {
         to: email,
-        from: from,
-        subject: subject,
-        template: 'email-verification',
+        from,
+        subject,
+        template: './email-verification', // ← add ./ prefix
         context: {
-          name: name,
-          otp: otp,
+          name,
+          otp,
+          appName: process.env.APP_NAME || 'ITBA Expo',
+          year: new Date().getFullYear(),
+          expiresIn: '10 minutes',
         },
       });
     } catch (error) {
-      console.log(error);
+      console.log('Failed to enqueue OTP email:', error);
     }
   }
 

@@ -36,16 +36,31 @@ export class MailProcessor extends WorkerHost {
             context: job.data.context,
           });
           break;
-        case 'sendOtpCodeToEmail':
-          this.logger.log('Sending OTP code to email');
-          await this.mailerService.sendMail({
-            to: job.data.to,
-            from: job.data.from,
-            subject: job.data.subject,
-            template: job.data.template,
-            context: job.data.context,
-          });
+        case 'sendOtpCodeToEmail': {
+          this.logger.log(
+            `OTP job ${job.id} → to=${job.data.to} template=${job.data.template}`,
+          );
+          this.logger.log(
+            `OTP context keys: ${Object.keys(job.data.context || {}).join(', ')}`,
+          );
+
+          try {
+            const info = await this.mailerService.sendMail({
+              to: job.data.to,
+              from: job.data.from,
+              subject: job.data.subject,
+              template: job.data.template,
+              context: job.data.context,
+            });
+            this.logger.log(`OTP email OK messageId=${info?.messageId}`);
+          } catch (err: any) {
+            this.logger.error(`OTP mailer FAILED: ${err?.message}`);
+            this.logger.error(`OTP mailer code: ${err?.code}`);
+            this.logger.error(`OTP mailer stack: ${err?.stack}`);
+            throw err;
+          }
           break;
+        }
         case 'sendVerificationLink':
           this.logger.log('Sending verification link');
           await this.mailerService.sendMail({
