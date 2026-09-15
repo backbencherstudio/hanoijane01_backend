@@ -200,4 +200,98 @@ export class MailService {
       console.log('Error adding sendAccountCredentialsEmail to queue:', error);
     }
   }
+
+  async sendBookingAcceptedEmail(params: {
+    email: string;
+    name?: string | null;
+    bookingId: string;
+    standNumber?: string | null;
+    hall?: string | null;
+    category?: string | null;
+    event?: string | null;
+    totalAmount?: number | string | null;
+    currency?: string | null;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
+      const subject = 'Your Booking Has Been Approved';
+
+      // crude currency symbol map, extend as needed
+      const symbols: Record<string, string> = {
+        usd: '$',
+        eur: '€',
+        gbp: '£',
+        inr: '₹',
+        bdt: '৳',
+      };
+      const cur = (params.currency || 'usd').toLowerCase();
+      const currencySymbol = symbols[cur] || '';
+
+      await this.queue.add('sendBookingAcceptedEmail', {
+        to: params.email,
+        from,
+        subject,
+        template: './booking-accepted',
+        context: {
+          name: params.name || 'there',
+          bookingId: params.bookingId,
+          standNumber: params.standNumber || '',
+          hall: params.hall || '',
+          category: params.category || '',
+          event: params.event || '',
+          totalAmount: params.totalAmount ?? '',
+          currencySymbol,
+          appName: process.env.APP_NAME || 'Hanoijane',
+          year: new Date().getFullYear(),
+        },
+      });
+    } catch (error) {
+      console.log('Error adding sendBookingAcceptedEmail to queue:', error);
+    }
+  }
+
+  async sendBookingRejectedEmail(params: {
+    email: string;
+    name?: string | null;
+    bookingId: string;
+    standNumber?: string | null;
+    hall?: string | null;
+    category?: string | null;
+    event?: string | null;
+    reason?: string | null;
+    rejectedAt?: Date | string | null;
+  }) {
+    try {
+      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
+      const subject = 'Your Booking Has Been Rejected';
+
+      const rejectedAt = params.rejectedAt
+        ? new Date(params.rejectedAt).toLocaleString('en-US', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          })
+        : '';
+
+      await this.queue.add('sendBookingRejectedEmail', {
+        to: params.email,
+        from,
+        subject,
+        template: './booking-rejected',
+        context: {
+          name: params.name || 'there',
+          bookingId: params.bookingId,
+          standNumber: params.standNumber || '',
+          hall: params.hall || '',
+          category: params.category || '',
+          event: params.event || '',
+          reason: params.reason || '',
+          rejectedAt,
+          appName: process.env.APP_NAME || 'Hanoijane',
+          year: new Date().getFullYear(),
+        },
+      });
+    } catch (error) {
+      console.log('Error adding sendBookingRejectedEmail to queue:', error);
+    }
+  }
 }

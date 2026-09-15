@@ -92,7 +92,9 @@ export class MailProcessor extends WorkerHost {
           });
           break;
         case 'sendAccountCredentialsEmail':
-          this.logger.log(`Sending account credentials email to ${job.data.to}`);
+          this.logger.log(
+            `Sending account credentials email to ${job.data.to}`,
+          );
           await this.mailerService.sendMail({
             to: job.data.to,
             from: job.data.from,
@@ -110,6 +112,28 @@ export class MailProcessor extends WorkerHost {
                 <p style="font-size: 13px; color: #718096; margin-top: 20px;">For security, please change your password after logging in for the first time.</p>
               </div>
             `,
+          });
+          break;
+
+        case 'sendBookingAcceptedEmail':
+          this.logger.log(`Sending booking accepted email to ${job.data.to}`);
+          await this.mailerService.sendMail({
+            to: job.data.to,
+            from: job.data.from,
+            subject: job.data.subject,
+            template: job.data.template,
+            context: job.data.context,
+          });
+          break;
+
+        case 'sendBookingRejectedEmail':
+          this.logger.log(`Sending booking rejected email to ${job.data.to}`);
+          await this.mailerService.sendMail({
+            to: job.data.to,
+            from: job.data.from,
+            subject: job.data.subject,
+            template: job.data.template,
+            context: job.data.context,
           });
           break;
         default:

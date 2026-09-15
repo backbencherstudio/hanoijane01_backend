@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { Prisma } from 'prisma/generated/client';
 import {
@@ -6,10 +10,14 @@ import {
   GetBookingsQueryDto,
 } from './dto/query-booking.dto';
 import { RejectBookingDto } from './dto/action-booking.dto';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class BookingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async getStats(query: GetBookingStatsQueryDto) {
     const { exhibitionId } = query;
@@ -306,11 +314,25 @@ export class BookingService {
    * - booking.paymentStatus = 'paid'
    * - booking.paidAt = now (if not set)
    * - stand.isAvailable = 0 (stand becomes unavailable)
+   * - linked PaymentTransaction → status: 'succeeded', paidAmount, paidCurrency
+   * - emails the user
    */
   async accept(id: string) {
     const booking = await this.prisma.booking.findUnique({
       where: { id },
-      include: { stand: true },
+      include: {
+        user: true,
+        stand: {
+          include: {
+            exhibition: true,
+            category: {
+              include: {
+                hall: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!booking || booking.deletedAt) {
@@ -327,16 +349,24 @@ export class BookingService {
       );
     }
 
+    const paidAt = booking.paidAt ?? new Date();
+    const amount = Number(booking.totalAmount);
+    const currency = (booking.currency || 'eur').toLowerCase();
+
     const result = await this.prisma.$transaction(async (tx) => {
+      // 1. Update booking
       const updatedBooking = await tx.booking.update({
         where: { id },
         data: {
           status: 1,
           paymentStatus: 'paid',
-          paidAt: booking.paidAt ?? new Date(),
+          paidAt,
+          rejectionReason: null,
+          rejectedAt: null,
         },
       });
 
+      // 2. Block the stand
       if (booking.standId) {
         await tx.stand.update({
           where: { id: booking.standId },
@@ -344,8 +374,47 @@ export class BookingService {
         });
       }
 
+      // 3. Sync the linked PaymentTransaction(s)
+      await tx.paymentTransaction.updateMany({
+        where: {
+          bookingId: booking.id,
+          deletedAt: null,
+        },
+        data: {
+          status: 'succeeded',
+          rawStatus: 'manually_approved_by_admin',
+          paidAmount: amount,
+          paidCurrency: currency,
+          ...(booking.stripePaymentIntentId
+            ? { stripePaymentIntentId: booking.stripePaymentIntentId }
+            : {}),
+          ...(booking.stripeCheckoutSessionId
+            ? { stripeCheckoutSessionId: booking.stripeCheckoutSessionId }
+            : {}),
+        },
+      });
+
       return updatedBooking;
     });
+
+    // ✅ Send approval email
+    const recipientEmail = booking.email || booking.user?.email;
+    if (recipientEmail) {
+      await this.mailService.sendBookingAcceptedEmail({
+        email: recipientEmail,
+        name:
+          booking.userName || booking.user?.name || booking.companyName || null,
+        bookingId: booking.id,
+        standNumber: booking.stand?.standNumber
+          ? String(booking.stand.standNumber).padStart(2, '0')
+          : null,
+        hall: booking.stand?.category?.hall?.title || null,
+        category: booking.stand?.category?.title || null,
+        event: booking.stand?.exhibition?.title || null,
+        totalAmount: amount,
+        currency,
+      });
+    }
 
     return {
       success: true,
@@ -353,7 +422,7 @@ export class BookingService {
       data: {
         id: result.id,
         status: 'BOOKED',
-        paymentStatus: (result.paymentStatus || 'PAID').toUpperCase(),
+        paymentStatus: 'PAID',
       },
     };
   }
@@ -362,12 +431,27 @@ export class BookingService {
    * Reject a booking:
    * - booking.status = -1 (canceled / rejected)
    * - booking.paymentStatus = 'rejected'
+   * - booking.rejectionReason / rejectedAt set
    * - stand.isAvailable = 1 (stand becomes available again)
+   * - linked PaymentTransaction → status: 'canceled'
+   * - emails the user
    */
   async reject(id: string, dto: RejectBookingDto) {
     const booking = await this.prisma.booking.findUnique({
       where: { id },
-      include: { stand: true },
+      include: {
+        user: true,
+        stand: {
+          include: {
+            exhibition: true,
+            category: {
+              include: {
+                hall: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!booking || booking.deletedAt) {
@@ -384,8 +468,8 @@ export class BookingService {
         data: {
           status: -1,
           paymentStatus: 'rejected',
-          // If you want to store the reason, add a field to the Booking model
-          // e.g. rejectionReason: dto.reason ?? null,
+          rejectionReason: dto.reason ?? null,
+          rejectedAt: new Date(),
         },
       });
 
@@ -396,8 +480,38 @@ export class BookingService {
         });
       }
 
+      // Mirror into the transaction ledger
+      await tx.paymentTransaction.updateMany({
+        where: { bookingId: booking.id, deletedAt: null },
+        data: {
+          status: 'canceled',
+          rawStatus: dto.reason
+            ? `rejected_by_admin: ${dto.reason}`
+            : 'rejected_by_admin',
+        },
+      });
+
       return updatedBooking;
     });
+
+    // ✅ Send rejection email
+    const recipientEmail = booking.email || booking.user?.email;
+    if (recipientEmail) {
+      await this.mailService.sendBookingRejectedEmail({
+        email: recipientEmail,
+        name:
+          booking.userName || booking.user?.name || booking.companyName || null,
+        bookingId: booking.id,
+        standNumber: booking.stand?.standNumber
+          ? String(booking.stand.standNumber).padStart(2, '0')
+          : null,
+        hall: booking.stand?.category?.hall?.title || null,
+        category: booking.stand?.category?.title || null,
+        event: booking.stand?.exhibition?.title || null,
+        reason: dto.reason ?? null,
+        rejectedAt: result.rejectedAt,
+      });
+    }
 
     return {
       success: true,
@@ -405,7 +519,9 @@ export class BookingService {
       data: {
         id: result.id,
         status: 'REJECTED',
-        paymentStatus: (result.paymentStatus || 'REJECTED').toUpperCase(),
+        paymentStatus: 'REJECTED',
+        rejectionReason: result.rejectionReason,
+        rejectedAt: result.rejectedAt,
       },
     };
   }
