@@ -29,7 +29,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors({
     origin: [
-      appConfig().app.client_app_url,
+      'https://www.itbaexpo.ie',
+      'https://itbaexpo.ie',
       'http://localhost:3000',
       'http://localhost:3001',
       'http://10.10.9.45:3000',
@@ -41,7 +42,6 @@ async function bootstrap() {
       'Authorization',
       'Accept',
       'X-Requested-With',
-      'X-Forwarded-For',
     ],
     credentials: true,
   });
