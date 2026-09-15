@@ -27,7 +27,7 @@ import appConfig from '../config/app.config';
             from: config.mail.from,
           },
           template: {
-            dir: join(process.cwd(), 'src/mail/templates'),
+            dir: join(__dirname, 'templates'),
             adapter: new EjsAdapter(),
             options: {
               strict: false,
