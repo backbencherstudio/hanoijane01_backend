@@ -399,7 +399,7 @@ export class ExhibitionSeedCommand extends CommandRunner {
                   title: standData.title,
                   standNumber: standData.standNumber,
                   description: standData.description,
-                  isAvailable: 1,
+                  isAvailable: standData.isAvailable ?? 1,
                   exhibitionId: exhibition.id,
                   categoryId: createdCategory.id,
                 },
