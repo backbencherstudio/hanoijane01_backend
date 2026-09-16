@@ -81,23 +81,6 @@ export const exhibitionSeedStructure = {
           ],
         },
         {
-          title: 'Premium Size 3',
-          slug: 'goffs-complex-premium-4x3.5',
-          size: '4m x 3.5m, corner',
-          price: 1750,
-          priceInMinorUnit: 175000,
-          vatPercentage: 0,
-          stands: [
-            {
-              standNumber: '17',
-              title: 'Stand 17',
-              description:
-                'Exclusive corner premium booth (4m x 3.5m) offering high dual-side visitor exposure.',
-              isAvailable: 0, // blocked
-            },
-          ],
-        },
-        {
           title: 'Small Size',
           slug: 'goffs-complex-small-size',
           size: '2.5m x 1.5m',
