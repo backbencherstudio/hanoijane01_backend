@@ -82,8 +82,8 @@ export const exhibitionSeedStructure = {
           title: 'Premium Size 3',
           slug: 'goffs-complex-premium-4x3.5',
           size: '4m x 3.5m, corner',
-          price: 3000,
-          priceInMinorUnit: 300000,
+          price: 1750,
+          priceInMinorUnit: 175000,
           vatPercentage: 0,
           stands: [
             {
