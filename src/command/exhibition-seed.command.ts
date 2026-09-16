@@ -37,12 +37,14 @@ export const exhibitionSeedStructure = {
           price: 1750,
           priceInMinorUnit: 175000,
           vatPercentage: 0,
-          stands: [2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 18, 19].map((num) => ({
-            standNumber: String(num),
-            title: `Stand ${num}`,
-            description: `Standard indoor exhibition booth (3m x 2m) located in Goffs Complex with prime walkway access.`,
-            isAvailable: [6, 7, 18, 19].includes(num) ? 0 : 1,
-          })),
+          stands: [2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19].map(
+            (num) => ({
+              standNumber: String(num),
+              title: `Stand ${num}`,
+              description: `Standard indoor exhibition booth (3m x 2m) located in Goffs Complex with prime walkway access.`,
+              isAvailable: [6, 7, 18, 19].includes(num) ? 0 : 1,
+            }),
+          ),
         },
         {
           title: 'Premium Size 1',
