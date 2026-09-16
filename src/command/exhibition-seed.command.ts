@@ -7,6 +7,7 @@ function generateStandRange(
   start: number,
   end: number,
   description: string,
+  isAvailable: number = 1,
 ) {
   const stands = [];
   for (let i = start; i <= end; i++) {
@@ -15,6 +16,7 @@ function generateStandRange(
       standNumber: numStr,
       title: `Stand ${numStr}`,
       description: `${description} (${numStr})`,
+      isAvailable,
     });
   }
   return stands;
@@ -39,6 +41,7 @@ export const exhibitionSeedStructure = {
             standNumber: String(num),
             title: `Stand ${num}`,
             description: `Standard indoor exhibition booth (3m x 2m) located in Goffs Complex with prime walkway access.`,
+            isAvailable: [6, 7, 18, 19].includes(num) ? 0 : 1,
           })),
         },
         {
@@ -54,6 +57,7 @@ export const exhibitionSeedStructure = {
               title: 'Stand 8',
               description:
                 'Spacious premium rectangular booth (6m x 2m) near main lounge area in Goffs Complex.',
+              isAvailable: 0, // blocked
             },
           ],
         },
@@ -70,6 +74,7 @@ export const exhibitionSeedStructure = {
               title: 'Stand 11',
               description:
                 'Premium front-row rectangular exhibition booth (4m x 2m) with maximum brand visibility.',
+              isAvailable: 0, // blocked
             },
           ],
         },
@@ -86,6 +91,7 @@ export const exhibitionSeedStructure = {
               title: 'Stand 17',
               description:
                 'Exclusive corner premium booth (4m x 3.5m) offering high dual-side visitor exposure.',
+              isAvailable: 0, // blocked
             },
           ],
         },
@@ -102,6 +108,7 @@ export const exhibitionSeedStructure = {
               title: 'Stand 9',
               description:
                 'Compact exhibition booth (2.5m x 1.5m) ideal for startups and targeted product showcases.',
+              isAvailable: 0, // blocked
             },
           ],
         },
@@ -126,6 +133,7 @@ export const exhibitionSeedStructure = {
               title: 'Stand M1',
               description:
                 'Standard marquee booth (3m x 2m) located right at the entrance of Goffs Auditorium hall.',
+              isAvailable: 1,
             },
             ...generateStandRange(
               'M',
@@ -160,6 +168,7 @@ export const exhibitionSeedStructure = {
               title: 'Stand M2',
               description:
                 'Top-tier corner premium booth (3m x 3m) positioned at the main entrance junction of Marquee.',
+              isAvailable: 1,
             },
           ],
         },
@@ -176,6 +185,7 @@ export const exhibitionSeedStructure = {
               title: 'Stand M50',
               description:
                 'Premium square exhibition booth (3m x 4m) with large footprint for immersive product displays.',
+              isAvailable: 1,
             },
           ],
         },
@@ -192,6 +202,7 @@ export const exhibitionSeedStructure = {
               title: 'Stand M51',
               description:
                 'Wide rectangular premium booth (5m x 2m) offering prominent front-line visitor presentation.',
+              isAvailable: 1,
             },
           ],
         },
@@ -208,12 +219,14 @@ export const exhibitionSeedStructure = {
               title: 'Stand M27',
               description:
                 'Corner premium booth (4m x 3m) located at the south exit corner of Marquee hall.',
+              isAvailable: 1,
             },
             {
               standNumber: 'M72',
               title: 'Stand M72',
               description:
                 'Corner premium booth (4m x 3m) situated at the south entrance junction of Marquee hall.',
+              isAvailable: 1,
             },
           ],
         },
@@ -239,36 +252,42 @@ export const exhibitionSeedStructure = {
               title: 'Outdoor Stand 1',
               description:
                 'Large outdoor exhibition space (10m x 5m) suited for machinery, vehicles, and open-air displays.',
+              isAvailable: 1,
             },
             {
               standNumber: 'O2',
               title: 'Outdoor Stand 2',
               description:
                 'Large outdoor exhibition plot (10m x 5m) with high visibility from the venue entrance.',
+              isAvailable: 1,
             },
             {
               standNumber: 'O3',
               title: 'Outdoor Stand 3',
               description:
                 'Outdoor exhibition area (10m x 5m) ideal for heavy equipment and interactive outdoor setups.',
+              isAvailable: 1,
             },
             {
               standNumber: 'O4',
               title: 'Outdoor Stand 4',
               description:
                 'Outdoor exhibition plot (10m x 5m) offering flexible space for custom structure installation.',
+              isAvailable: 1,
             },
             {
               standNumber: 'O5',
               title: 'Outdoor Stand 5',
               description:
                 'Spacious outdoor plot (10m x 5m) near main venue walkways for open-air visitor engagement.',
+              isAvailable: 1,
             },
             {
               standNumber: 'O6',
               title: 'Outdoor Stand 6',
               description:
                 'Versatile outdoor exhibition plot (10m x 5m) suitable for high foot-traffic displays and open-air activities.',
+              isAvailable: 1,
             },
           ],
         },
