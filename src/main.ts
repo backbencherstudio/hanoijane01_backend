@@ -24,7 +24,7 @@ async function bootstrap() {
   // app.use(urlencoded({ extended: true, limit: '10mb' }));
 
   // Handle raw body for webhooks
-  app.use('/payment/stripe/webhook', express.raw({ type: 'application/json' }));
+  // app.use('/payment/stripe/webhook', express.raw({ type: 'application/json' }));
 
   app.setGlobalPrefix('api');
   app.enableCors({

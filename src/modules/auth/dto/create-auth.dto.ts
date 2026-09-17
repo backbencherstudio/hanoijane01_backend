@@ -13,7 +13,7 @@ export class CreateAuthDto {
   @IsEmail()
   @ApiProperty({
     description: 'The email address of the user',
-    example: 'user@example.com',
+    example: 'admin@itbaexpo.ie',
   })
   email: string;
 

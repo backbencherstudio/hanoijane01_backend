@@ -6,7 +6,7 @@ export class SigninAuthDto {
   @IsEmail()
   @ApiProperty({
     description: 'User email address',
-    example: 'user@example.com',
+    example: 'admin@itbaexpo.ie',
   })
   email: string;
 
@@ -25,7 +25,7 @@ export class ForgotPasswordAuthDto {
   @IsEmail()
   @ApiProperty({
     description: 'User email address',
-    example: 'user@example.com',
+    example: 'admin@itbaexpo.ie',
   })
   email: string;
 }
@@ -35,7 +35,7 @@ export class ResetPasswordAuthDto {
   @IsEmail()
   @ApiProperty({
     description: 'User email address',
-    example: 'user@example.com',
+    example: 'admin@itbaexpo.ie',
   })
   email: string;
 
@@ -60,7 +60,7 @@ export class VerifyEmailAuthDto {
   @IsEmail()
   @ApiProperty({
     description: 'User email address',
-    example: 'user@example.com',
+    example: 'admin@itbaexpo.ie',
   })
   email: string;
 
@@ -77,7 +77,7 @@ export class ResendVerificationAuthDto {
   @IsEmail()
   @ApiProperty({
     description: 'User email address',
-    example: 'user@example.com',
+    example: 'admin@itbaexpo.ie',
   })
   email: string;
 }
