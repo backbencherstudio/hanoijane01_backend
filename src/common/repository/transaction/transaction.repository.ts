@@ -150,9 +150,9 @@ export class TransactionRepository {
       paymentStatus === 'canceled' ||
       paymentStatus === 'refunded';
 
-    // Race Condition Check:
-    // Since the stand is NOT blocked on payment anymore (only admin approval blocks it),
-    // we detect conflict by checking if ANOTHER booking for the same stand is already paid.
+    // ---------------------------------------------------------------
+    // Concurrency guard: another booking for the same stand is already paid
+    // ---------------------------------------------------------------
     if (
       isPaid &&
       booking.standId &&
@@ -165,7 +165,7 @@ export class TransactionRepository {
           id: { not: bookingId },
           paymentStatus: 'paid',
           deletedAt: null,
-          status: { not: -1 }, // ignore already-rejected ones
+          status: { not: -1 },
         },
       });
 
@@ -190,13 +190,17 @@ export class TransactionRepository {
       }
     }
 
-    // 1. Update Booking record
-    // NOTE: paid ≠ booked. Booking stays PENDING (status unchanged) until admin accepts it.
+    // ---------------------------------------------------------------
+    // 1. Update the booking
+    //    IMPORTANT: on payment success we KEEP status unchanged (still 0 = PENDING).
+    //    Only admin accept() flips status to 1 and blocks the stand.
+    // ---------------------------------------------------------------
     const updatedBooking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
         paymentStatus,
-        status: isFailedOrCanceled ? -1 : booking.status, // paid keeps current status (0 = PENDING)
+        // ✅ DO NOT set status=1 here
+        status: isFailedOrCanceled ? -1 : booking.status,
         stripePaymentIntentId: paymentIntentId || booking.stripePaymentIntentId,
         stripeCheckoutSessionId:
           checkoutSessionId || booking.stripeCheckoutSessionId,
@@ -205,10 +209,10 @@ export class TransactionRepository {
       },
     });
 
-    // 2. Stand availability
-    // - On failure/cancel/refund: release the stand (isAvailable = 1).
-    // - On payment success: DO NOT block the stand here. Admin accept() does that.
-    // - Do NOT auto-cancel other unpaid bookings on paid — admin decides the winner.
+    // ---------------------------------------------------------------
+    // 2. Stand availability — only release on failure/cancel/refund.
+    //    DO NOT block the stand here. Admin accept() blocks it.
+    // ---------------------------------------------------------------
     if (booking.standId && isFailedOrCanceled) {
       await this.prisma.stand.update({
         where: { id: booking.standId },
@@ -216,7 +220,9 @@ export class TransactionRepository {
       });
     }
 
-    // 3. Upsert PaymentTransaction record for ledger
+    // ---------------------------------------------------------------
+    // 3. Upsert PaymentTransaction ledger row
+    // ---------------------------------------------------------------
     const existingTransaction = await this.prisma.paymentTransaction.findFirst({
       where: {
         OR: [
@@ -226,7 +232,7 @@ export class TransactionRepository {
           ...(paymentIntentId
             ? [{ stripePaymentIntentId: paymentIntentId }]
             : []),
-          { bookingId: bookingId },
+          { bookingId },
         ],
       },
     });
@@ -255,7 +261,7 @@ export class TransactionRepository {
     } else {
       await this.prisma.paymentTransaction.create({
         data: {
-          bookingId: bookingId,
+          bookingId,
           userId: booking.userId,
           amount: amount !== undefined ? amount : Number(booking.totalAmount),
           currency: currency || booking.currency || 'eur',
@@ -272,12 +278,14 @@ export class TransactionRepository {
           stripeCustomerId: customerId,
           stripePaymentIntentId: paymentIntentId,
           stripeCheckoutSessionId: checkoutSessionId,
-          receiptUrl: receiptUrl,
+          receiptUrl,
         },
       });
     }
 
-    // 4. Send Notifications & Emails based on payment status
+    // ---------------------------------------------------------------
+    // 4. Notifications
+    // ---------------------------------------------------------------
     const standName = booking.stand?.standNumber
       ? `Stand ${booking.stand.standNumber}`
       : 'your stand';

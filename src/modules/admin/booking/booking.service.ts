@@ -99,6 +99,8 @@ export class BookingService {
           { status: -1 },
           { paymentStatus: { in: ['refunded', 'failed', 'canceled'] } },
         ];
+      } else if (statusLower === 'rejected') {
+        where.OR = [{ status: -1, paymentStatus: 'rejected' }];
       }
     }
 
@@ -160,9 +162,16 @@ export class BookingService {
     ]);
 
     const items = bookings.map((booking) => {
-      // Determine mapped status string
+      // ✅ Status mapping:
+      //  - BOOKED only when admin has approved (status === 1)
+      //  - PENDING when status === 0 (unpaid or paid-but-awaiting-approval)
+      //  - REJECTED when paymentStatus === 'rejected'
+      //  - CANCELED / REFUNDED as before
       let bookingStatus = 'PENDING';
-      if (
+
+      if (booking.paymentStatus === 'rejected') {
+        bookingStatus = 'REJECTED';
+      } else if (
         booking.paymentStatus === 'refunded' ||
         booking.paymentStatus === 'conflict_refund_needed'
       ) {
@@ -172,8 +181,8 @@ export class BookingService {
         ['failed', 'canceled'].includes(booking.paymentStatus || '')
       ) {
         bookingStatus = 'CANCELED';
-      } else if (booking.status === 1 || booking.paymentStatus === 'paid') {
-        bookingStatus = 'BOOKED';
+      } else if (booking.status === 1) {
+        bookingStatus = 'BOOKED'; // ✅ only after admin accept()
       } else if (booking.status === 0) {
         bookingStatus = 'PENDING';
       }
@@ -204,6 +213,10 @@ export class BookingService {
         booking.paymentStatus || 'UNPAID'
       ).toUpperCase();
 
+      // ✅ Flag the frontend can use to show "Paid — awaiting approval"
+      const isAwaitingApproval =
+        booking.status === 0 && booking.paymentStatus === 'paid';
+
       return {
         id: booking.id,
         standNumber,
@@ -213,6 +226,7 @@ export class BookingService {
         pricePerDay,
         status: bookingStatus,
         paymentStatus: formattedPaymentStatus,
+        isAwaitingApproval,
         bookingDate: booking.createdAt,
       };
     });
@@ -256,9 +270,12 @@ export class BookingService {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
 
-    // Map booking type
+    // ✅ Status mapping — same rules as findAll
     let bookingType = 'PENDING';
-    if (
+
+    if (booking.paymentStatus === 'rejected') {
+      bookingType = 'REJECTED';
+    } else if (
       booking.paymentStatus === 'refunded' ||
       booking.paymentStatus === 'conflict_refund_needed'
     ) {
@@ -268,8 +285,8 @@ export class BookingService {
       ['failed', 'canceled'].includes(booking.paymentStatus || '')
     ) {
       bookingType = 'CANCELED';
-    } else if (booking.status === 1 || booking.paymentStatus === 'paid') {
-      bookingType = 'BOOKED';
+    } else if (booking.status === 1) {
+      bookingType = 'BOOKED'; // ✅ only after admin accept()
     } else if (booking.status === 0) {
       bookingType = 'PENDING';
     }
@@ -299,6 +316,13 @@ export class BookingService {
       onBehalfOf: booking.onBehalfOf || null,
       title: booking.title || null,
       signaturePath: booking.signaturePath || null,
+
+      // ✅ Extra fields for the admin UI
+      paidAt: booking.paidAt || null,
+      rejectionReason: booking.rejectionReason || null,
+      rejectedAt: booking.rejectedAt || null,
+      isAwaitingApproval:
+        booking.status === 0 && booking.paymentStatus === 'paid',
     };
 
     return {

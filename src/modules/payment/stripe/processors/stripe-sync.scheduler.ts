@@ -11,29 +11,27 @@ export class StripeSyncScheduler implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    // 🚫 Recurring scheduler disabled — Stripe webhooks are the source of truth.
+    // Manual reconciliation remains available via:
+    //   POST /api/admin/transaction/sync-stripe
     this.logger.log(
-      'Initializing recurring Stripe Reconciliation Queue Scheduler (Every 15 mins)...',
+      'StripeSyncScheduler disabled — relying on webhooks + manual sync.',
     );
 
+    // Remove any previously-registered repeatable job from Redis so it stops firing.
     try {
-      // Register recurring job in BullMQ Redis queue
-      await this.stripeSyncQueue.add(
+      await this.stripeSyncQueue.removeRepeatable(
         'sync-stripe-reconciliation',
-        {},
         {
-          repeat: {
-            pattern: '*/15 * * * *', // Runs every 15 minutes
-          },
-          removeOnComplete: true,
-          removeOnFail: 100,
+          pattern: '*/15 * * * *',
         },
       );
       this.logger.log(
-        'Successfully scheduled recurring Stripe reconciliation job in BullMQ Redis.',
+        'Removed old repeatable Stripe sync job from BullMQ (if it existed).',
       );
-    } catch (error) {
-      this.logger.error(
-        `Failed to register recurring Stripe sync job: ${error.message}`,
+    } catch (err: any) {
+      this.logger.warn(
+        `Could not remove old repeatable job (may not exist): ${err?.message}`,
       );
     }
   }

@@ -159,7 +159,6 @@ export class ExhibitionService {
 
   async getStandsStats(query: GetExhibitionStatsQueryDto) {
     const { exhibitionId } = query;
-
     const hallWhere: Prisma.HallWhereInput = { deletedAt: null };
     if (exhibitionId) hallWhere.exhibitionId = exhibitionId;
 
@@ -193,12 +192,11 @@ export class ExhibitionService {
       let bookedStands = 0;
       let availableStands = 0;
       let blockedStands = 0;
-      let pendingStands = 0;
+      let pendingPaidStands = 0;
 
       hall.standCategories.forEach((category) => {
         category.stands.forEach((stand) => {
           totalStands += 1;
-
           const hasApprovedBooking = stand.bookings.some((b) => b.status === 1);
           const hasPendingPaidBooking = stand.bookings.some(
             (b) => b.status === 0 && b.paymentStatus === 'paid',
@@ -207,10 +205,10 @@ export class ExhibitionService {
           if (hasApprovedBooking) {
             bookedStands += 1;
           } else if (stand.isAvailable === 0) {
-            blockedStands += 1; // blocked by admin, no active booking
+            blockedStands += 1;
           } else if (hasPendingPaidBooking) {
-            pendingStands += 1; // paid but awaiting admin approval
-            availableStands += 1; // still bookable from a data standpoint
+            pendingPaidStands += 1;
+            availableStands += 1;
           } else {
             availableStands += 1;
           }
@@ -224,7 +222,7 @@ export class ExhibitionService {
         bookedStands,
         availableStands,
         blockedStands,
-        pendingStands, // new
+        pendingPaidStands,
       };
     });
 

@@ -4,16 +4,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UserSession } from '../../auth/decorators/session.decorator';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { FindAllBookingsQueryDto } from './dto/query-booking.dto';
 import { NajimStorage } from '../../../common/lib/Disk/NajimStorage';
 import appConfig from 'src/config/app.config';
+import { StripeService } from 'src/modules/payment/stripe/stripe.service';
 
 @Injectable()
 export class BookingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stripeService: StripeService,
+  ) {}
 
   async create(
     session: UserSession,
@@ -37,6 +40,7 @@ export class BookingService {
         `Stand with ID ${createBookingDto.standId} not found`,
       );
     }
+
     if (stand.isAvailable === 0) {
       // Cancel any stale unpaid booking this user has for this stand
       await this.prisma.booking.updateMany({
@@ -55,6 +59,7 @@ export class BookingService {
           : `Stand ${stand.standNumber ?? ''} is currently unavailable for booking`,
       );
     }
+
     if (!stand.category) {
       throw new BadRequestException(
         `Stand with ID ${createBookingDto.standId} does not have an assigned category`,
@@ -77,7 +82,7 @@ export class BookingService {
       signaturePathToSave = meta.fileKey;
     }
 
-    // Reuse existing unpaid booking for the same user and stand if present to prevent duplicates
+    // Reuse existing unpaid booking for the same user and stand if present
     const existingUnpaidBooking = await this.prisma.booking.findFirst({
       where: {
         userId: session.user.id,
@@ -106,6 +111,8 @@ export class BookingService {
       paymentStatus: true,
       paymentMethod: true,
       status: true,
+      currency: true,
+      paidAt: true,
       stand: {
         select: {
           id: true,
@@ -183,6 +190,7 @@ export class BookingService {
           totalAmount,
           paymentStatus: 'unpaid',
           paymentMethod: 'stripe',
+          currency: 'eur',
           status: 0,
         },
         select: bookingSelect,
@@ -203,9 +211,13 @@ export class BookingService {
           restBooking.status === 1
             ? 'BOOKED'
             : restBooking.status === -1 ||
-                restBooking.paymentStatus === 'canceled'
+                ['canceled', 'refunded', 'failed', 'rejected'].includes(
+                  (restBooking.paymentStatus || '').toLowerCase(),
+                )
               ? 'CANCELED'
               : 'PENDING',
+        isAwaitingApproval:
+          restBooking.status === 0 && restBooking.paymentStatus === 'paid',
         stand: {
           ...restStand,
           category: category.title ?? null,
@@ -242,6 +254,8 @@ export class BookingService {
           status: true,
           paymentStatus: true,
           createdAt: true,
+          paidAt: true,
+          currency: true,
           stand: {
             select: {
               id: true,
@@ -275,7 +289,9 @@ export class BookingService {
         },
       }),
     ]);
+
     const totalPages = Math.ceil(totalBookings / limit);
+
     return {
       success: true,
       message: 'Bookings retrieved successfully',
@@ -285,20 +301,28 @@ export class BookingService {
           restBooking.paymentStatus || 'UNPAID'
         ).toUpperCase();
 
+        // ✅ Status mapping — matched with admin:
+        //  - BOOKED only when status === 1 (admin approved)
+        //  - CANCELED / REJECTED for terminal negative states
+        //  - PENDING otherwise (includes paid-but-awaiting-approval)
         const formattedStatus =
           status === 1
             ? 'BOOKED'
             : status === -1 ||
-                ['CANCELED', 'REFUNDED', 'FAILED'].includes(
+                ['CANCELED', 'REFUNDED', 'FAILED', 'REJECTED'].includes(
                   formattedPaymentStatus,
                 )
               ? 'CANCELED'
               : 'PENDING';
 
+        const isAwaitingApproval =
+          status === 0 && formattedPaymentStatus === 'PAID';
+
         return {
           ...restBooking,
           status: formattedStatus,
           paymentStatus: formattedPaymentStatus,
+          isAwaitingApproval, // ✅ flag for UI
           standId: stand.id,
           standNumber: stand.standNumber,
           standTitle: stand.title,
@@ -317,6 +341,29 @@ export class BookingService {
         totalPages,
         currentPage: page,
       },
+    };
+  }
+
+  /**
+   * User-facing helper: forcibly sync a booking's payment status from Stripe.
+   * Useful right after returning from Stripe Checkout if the webhook is slow.
+   */
+  async syncMyBookingPayment(session: UserSession, bookingId: string) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: { id: true, userId: true },
+    });
+
+    if (!booking || booking.userId !== session.user.id) {
+      throw new NotFoundException(`Booking with ID ${bookingId} not found`);
+    }
+
+    const synced = await this.stripeService.syncBookingById(bookingId);
+
+    return {
+      success: true,
+      message: 'Booking payment synced with Stripe successfully',
+      data: synced,
     };
   }
 }
