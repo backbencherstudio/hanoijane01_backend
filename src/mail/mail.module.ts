@@ -6,6 +6,7 @@ import { join } from 'path';
 import { MailService } from './mail.service';
 import { MailProcessor } from './processors/mail.processor';
 import appConfig from '../config/app.config';
+import { MicrosoftGraphMailService } from './microsoft-graph-mail.service';
 
 @Global()
 @Module({
@@ -40,7 +41,7 @@ import appConfig from '../config/app.config';
       name: 'mail-queue',
     }),
   ],
-  providers: [MailService, MailProcessor],
+  providers: [MailService, MailProcessor, MicrosoftGraphMailService],
   exports: [MailService],
 })
 export class MailModule {}

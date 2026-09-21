@@ -15,39 +15,39 @@ export class MailService {
     MailService.instance = this;
   }
 
+  // ============================================================
+  // 1. Member Invitation
+  // ============================================================
   async sendMemberInvitation({ user, member, url }) {
     try {
-      const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
       const subject = `${user.fname} is inviting you to ${appConfig().app.name}`;
 
-      // add to queue
       await this.queue.add('sendMemberInvitation', {
         to: member.email,
-        from: from,
-        subject: subject,
+        subject,
         template: 'member-invitation',
         context: {
-          user: user,
-          member: member,
-          url: url,
+          user,
+          member,
+          url,
         },
       });
     } catch (error) {
-      console.log(error);
+      console.error('Error adding sendMemberInvitation to queue:', error);
     }
   }
 
-  // send otp code for email verification
+  // ============================================================
+  // 2. OTP Code for Email Verification
+  // ============================================================
   async sendOtpCodeToEmail({ name, email, otp }) {
     try {
-      const from = `${process.env.APP_NAME || 'ITBA Expo'} <${appConfig().mail.from}>`;
       const subject = 'Email Verification';
 
       await this.queue.add('sendOtpCodeToEmail', {
         to: email,
-        from,
         subject,
-        template: './email-verification', // ← add ./ prefix
+        template: 'email-verification', // ✅ leading ./ বাদ
         context: {
           name,
           otp,
@@ -57,10 +57,13 @@ export class MailService {
         },
       });
     } catch (error) {
-      console.log('Failed to enqueue OTP email:', error);
+      console.error('Failed to enqueue OTP email:', error);
     }
   }
 
+  // ============================================================
+  // 3. Verification Link (token + type সহ)
+  // ============================================================
   async sendVerificationLink(params: {
     email: string;
     name: string;
@@ -70,57 +73,61 @@ export class MailService {
     try {
       const verificationLink = `${appConfig().app.client_app_url}/verify-email?token=${params.token}&email=${params.email}&type=${params.type}`;
 
-      // add to queue
       await this.queue.add('sendVerificationLink', {
         to: params.email,
         subject: 'Verify Your Email',
-        template: './verification-link',
+        template: 'verification-link', // ✅ leading ./ বাদ
         context: {
           name: params.name,
           verificationLink,
         },
       });
     } catch (error) {
-      console.log(error);
+      console.error('Error adding sendVerificationLink to queue:', error);
     }
   }
 
+  // ============================================================
+  // 4. Verification Email (direct URL সহ)
+  // ============================================================
   async sendVerificationEmail(email: string, name: string, url: string) {
     try {
-      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
       await this.queue.add('sendVerificationLink', {
         to: email,
-        from,
         subject: 'Verify Your Email',
-        template: './verification-link',
+        template: 'verification-link', // ✅ leading ./ বাদ
         context: {
           name,
           verificationLink: url,
         },
       });
     } catch (error) {
-      console.log(error);
+      console.error('Error adding sendVerificationEmail to queue:', error);
     }
   }
 
+  // ============================================================
+  // 5. Reset Password Email
+  // ============================================================
   async sendResetPasswordEmail(email: string, name: string, url: string) {
     try {
-      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
       await this.queue.add('sendResetPassword', {
         to: email,
-        from,
         subject: 'Reset Your Password',
-        template: './reset-password',
+        template: 'reset-password', // ✅ leading ./ বাদ
         context: {
           name,
           resetLink: url,
         },
       });
     } catch (error) {
-      console.log(error);
+      console.error('Error adding sendResetPasswordEmail to queue:', error);
     }
   }
 
+  // ============================================================
+  // 6. Notification Email (inline HTML)
+  // ============================================================
   async sendNotificationEmail(params: {
     to: string | string[];
     subject: string;
@@ -128,13 +135,13 @@ export class MailService {
     text: string;
   }) {
     try {
-      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
       const recipients = Array.isArray(params.to) ? params.to : [params.to];
+
       for (const recipient of recipients) {
         if (!recipient) continue;
+
         await this.queue.add('sendNotificationEmail', {
           to: recipient,
-          from,
           subject: params.subject,
           context: {
             title: params.title,
@@ -143,10 +150,13 @@ export class MailService {
         });
       }
     } catch (error) {
-      console.log('Error adding sendNotificationEmail to queue:', error);
+      console.error('Error adding sendNotificationEmail to queue:', error);
     }
   }
 
+  // ============================================================
+  // 7. Contact Message Email (inline HTML)
+  // ============================================================
   async sendContactMessageEmail(params: {
     to: string | string[];
     name?: string | null;
@@ -156,14 +166,14 @@ export class MailService {
     message: string;
   }) {
     try {
-      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
       const recipients = Array.isArray(params.to) ? params.to : [params.to];
       const subject = `New Contact Message from ${params.name || params.email}`;
+
       for (const recipient of recipients) {
         if (!recipient) continue;
+
         await this.queue.add('sendContactMessageEmail', {
           to: recipient,
-          from,
           subject,
           context: {
             name: params.name || 'N/A',
@@ -175,21 +185,23 @@ export class MailService {
         });
       }
     } catch (error) {
-      console.log('Error adding sendContactMessageEmail to queue:', error);
+      console.error('Error adding sendContactMessageEmail to queue:', error);
     }
   }
 
+  // ============================================================
+  // 8. Account Credentials Email (inline HTML)
+  // ============================================================
   async sendAccountCredentialsEmail(params: {
     email: string;
     name?: string | null;
     password: string;
   }) {
     try {
-      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
       const subject = `Your Account Credentials for ${appConfig().app.name || 'Hanoijane'}`;
+
       await this.queue.add('sendAccountCredentialsEmail', {
         to: params.email,
-        from,
         subject,
         context: {
           name: params.name || 'User',
@@ -199,10 +211,16 @@ export class MailService {
         },
       });
     } catch (error) {
-      console.log('Error adding sendAccountCredentialsEmail to queue:', error);
+      console.error(
+        'Error adding sendAccountCredentialsEmail to queue:',
+        error,
+      );
     }
   }
 
+  // ============================================================
+  // 9. Booking Accepted Email (template)
+  // ============================================================
   async sendBookingAcceptedEmail(params: {
     email: string;
     name?: string | null;
@@ -215,10 +233,8 @@ export class MailService {
     currency?: string | null;
   }) {
     try {
-      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
       const subject = 'Your Booking Has Been Approved';
 
-      // crude currency symbol map, extend as needed
       const symbols: Record<string, string> = {
         usd: '$',
         eur: '€',
@@ -231,9 +247,8 @@ export class MailService {
 
       await this.queue.add('sendBookingAcceptedEmail', {
         to: params.email,
-        from,
         subject,
-        template: './booking-accepted',
+        template: 'booking-accepted', // ✅ leading ./ বাদ
         context: {
           name: params.name || 'there',
           bookingId: params.bookingId,
@@ -248,10 +263,13 @@ export class MailService {
         },
       });
     } catch (error) {
-      console.log('Error adding sendBookingAcceptedEmail to queue:', error);
+      console.error('Error adding sendBookingAcceptedEmail to queue:', error);
     }
   }
 
+  // ============================================================
+  // 10. Booking Rejected Email (template)
+  // ============================================================
   async sendBookingRejectedEmail(params: {
     email: string;
     name?: string | null;
@@ -264,7 +282,6 @@ export class MailService {
     rejectedAt?: Date | string | null;
   }) {
     try {
-      const from = `${process.env.APP_NAME || 'hanoijane'} <${appConfig().mail.from}>`;
       const subject = 'Your Booking Has Been Rejected';
 
       const rejectedAt = params.rejectedAt
@@ -276,9 +293,8 @@ export class MailService {
 
       await this.queue.add('sendBookingRejectedEmail', {
         to: params.email,
-        from,
         subject,
-        template: './booking-rejected',
+        template: 'booking-rejected', // ✅ leading ./ বাদ
         context: {
           name: params.name || 'there',
           bookingId: params.bookingId,
@@ -293,7 +309,7 @@ export class MailService {
         },
       });
     } catch (error) {
-      console.log('Error adding sendBookingRejectedEmail to queue:', error);
+      console.error('Error adding sendBookingRejectedEmail to queue:', error);
     }
   }
 }
