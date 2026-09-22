@@ -37,7 +37,7 @@ export class SeedCommand extends CommandRunner {
   async userSeed() {
     // Admin user: admin@itbaexpo.ie
     await this.userRepository.createSuAdminUser({
-      email: 'admin@itbaexpo.ie',
+      email: appConfig().defaultUser.system.email,
       password: appConfig().defaultUser.system.password || '12345678',
       // password: '12345678',
       name: 'ITBA Admin',
