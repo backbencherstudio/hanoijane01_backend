@@ -259,6 +259,44 @@ export class MailProcessor extends WorkerHost {
         }
 
         // ============================================================
+        // 10. Booking Created (payment pending) — template
+        // ============================================================
+        case 'sendBookingCreatedEmail': {
+          this.logger.log(`Sending booking created email to ${job.data.to}`);
+          const html = await this.renderTemplate(
+            job.data.template,
+            job.data.context,
+          );
+          await this.graphMailService.sendMail({
+            to: job.data.to,
+            subject: job.data.subject,
+            html,
+          });
+          this.logger.log(`Booking created email sent to ${job.data.to}`);
+          break;
+        }
+
+        // ============================================================
+        // 11. Admin Booking Notification (paid)
+        // ============================================================
+        case 'sendAdminBookingNotificationEmail': {
+          this.logger.log(
+            `Sending admin booking notification to ${job.data.to}`,
+          );
+          const html = await this.renderTemplate(
+            job.data.template,
+            job.data.context,
+          );
+          await this.graphMailService.sendMail({
+            to: job.data.to,
+            subject: job.data.subject,
+            html,
+          });
+          this.logger.log(`Admin booking notification sent to ${job.data.to}`);
+          break;
+        }
+
+        // ============================================================
         // Default
         // ============================================================
         default: {

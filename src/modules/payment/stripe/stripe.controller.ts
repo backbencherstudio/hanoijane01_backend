@@ -164,7 +164,7 @@ export class StripeController {
       }
 
       return { received: true };
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(
         `Error processing webhook event ${event.type}: ${error.message}`,
         error.stack,

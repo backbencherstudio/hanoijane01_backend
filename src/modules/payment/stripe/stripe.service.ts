@@ -12,6 +12,7 @@ import {
   CreateBookingCheckoutDto,
   CreatePaymentIntentDto,
 } from './dto/create-checkout.dto';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class StripeService {
@@ -20,6 +21,7 @@ export class StripeService {
   constructor(
     private readonly transactionRepository: TransactionRepository,
     private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -103,19 +105,109 @@ export class StripeService {
           params.paymentIntentId,
           'Stand was already booked by another user first.',
         );
-        return await this.transactionRepository.syncBookingPayment({
+        const result = await this.transactionRepository.syncBookingPayment({
           bookingId: params.bookingId,
           paymentStatus: 'refunded',
           paymentIntentId: params.paymentIntentId,
           checkoutSessionId: params.checkoutSessionId,
           rawStatus: 'stand_conflict_auto_refunded',
         });
-      } catch (err) {
+
+        if (
+          params.paymentStatus === 'paid' &&
+          syncResult &&
+          !syncResult.conflict
+        ) {
+          await this.sendAdminPaidBookingNotification(params.bookingId);
+        }
+
+        return result;
+      } catch (err: any) {
         this.logger.error(`Failed to issue Stripe auto-refund: ${err.message}`);
       }
     }
 
     return syncResult;
+  }
+
+  /**
+   * Fetches booking with relations and sends admin notification email.
+   * Skips silently if booking not found or already notified.
+   */
+  private async sendAdminPaidBookingNotification(bookingId: string) {
+    try {
+      const booking = await this.prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: {
+          stand: {
+            include: {
+              category: {
+                include: {
+                  hall: {
+                    include: { exhibition: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!booking) {
+        this.logger.warn(
+          `Booking ${bookingId} not found for admin notification.`,
+        );
+        return;
+      }
+
+      // paymentStatus আবার check — double safety
+      if (booking.paymentStatus !== 'paid') {
+        this.logger.warn(
+          `Booking ${bookingId} paymentStatus=${booking.paymentStatus}, skipping admin notification.`,
+        );
+        return;
+      }
+
+      const adminEmails = (
+        process.env.ADMIN_NOTIFICATION_EMAILS || 'office@itba.ie'
+      )
+        .split(',')
+        .map((e) => e.trim())
+        .filter(Boolean);
+
+      if (adminEmails.length === 0) {
+        this.logger.warn('No admin emails configured. Skipping notification.');
+        return;
+      }
+
+      await this.mailService.sendAdminBookingNotificationEmail({
+        to: adminEmails,
+        bookingId: booking.id,
+        userName: booking.userName,
+        companyName: booking.companyName,
+        userEmail: booking.email,
+        phoneNumber: booking.phoneNumber,
+        standNumber: booking.stand?.standNumber
+          ? String(booking.stand.standNumber).padStart(2, '0')
+          : null,
+        hall: booking.stand?.category?.hall?.title || null,
+        category: booking.stand?.category?.title || null,
+        event: booking.stand?.category?.hall?.exhibition?.title || null,
+        totalAmount: booking.totalAmount,
+        currency: booking.currency,
+        paidAt: booking.paidAt || new Date(),
+      });
+
+      this.logger.log(
+        `Admin notification sent for booking ${bookingId} to [${adminEmails.join(', ')}]`,
+      );
+    } catch (err: any) {
+      // ── Mail failure payment flow block করবে না ──
+      this.logger.error(
+        `Failed to send admin notification for booking ${bookingId}: ${err.message}`,
+        err.stack,
+      );
+    }
   }
 
   /**
@@ -163,7 +255,7 @@ export class StripeService {
             currency,
           };
         }
-      } catch (err) {
+      } catch (err: any) {
         this.logger.warn(
           `Could not retrieve existing Checkout Session ${booking.stripeCheckoutSessionId}: ${err.message}. Creating a new one.`,
         );
@@ -257,7 +349,7 @@ export class StripeService {
             currency,
           };
         }
-      } catch (err) {
+      } catch (err: any) {
         this.logger.warn(
           `Could not retrieve existing PaymentIntent ${booking.stripePaymentIntentId}: ${err.message}. Creating a new one.`,
         );
@@ -356,7 +448,7 @@ export class StripeService {
             : paymentIntent.latest_charge.id;
         const charge = await StripePayment.getCharge(chargeId);
         receiptUrl = charge.receipt_url || undefined;
-      } catch (err) {
+      } catch (err: any) {
         this.logger.warn(
           `Could not retrieve receipt_url for charge: ${err.message}`,
         );
@@ -551,7 +643,7 @@ export class StripeService {
             canceledCount++;
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         this.logger.error(
           `Error reconciling booking ${booking.id}: ${err.message}`,
         );

@@ -4,12 +4,14 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { UserSession } from '../../auth/decorators/session.decorator';
 
 import { NotificationService } from '../../notification/notification.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class ContactService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(
@@ -42,6 +44,22 @@ export class ContactService {
         phoneNumber: contact.phoneNumber,
         message: contact.message,
       },
+    });
+
+    const adminEmails = (
+      process.env.CONTACT_ADMIN_EMAILS || 'admin@itbaexpo.ie'
+    )
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean);
+
+    await this.mailService.sendContactMessageEmail({
+      to: adminEmails,
+      name: contact.name,
+      email: contact.email,
+      companyName: contact.companyName,
+      phoneNumber: contact.phoneNumber,
+      message: contact.message,
     });
 
     return {

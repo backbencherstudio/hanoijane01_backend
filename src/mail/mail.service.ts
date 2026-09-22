@@ -3,6 +3,7 @@ import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { MailerService } from '@nestjs-modules/mailer';
 import appConfig from '../config/app.config';
+import { Decimal } from '@prisma/client/runtime/index-browser';
 
 @Injectable()
 export class MailService {
@@ -310,6 +311,129 @@ export class MailService {
       });
     } catch (error) {
       console.error('Error adding sendBookingRejectedEmail to queue:', error);
+    }
+  }
+
+  // ============================================================
+  // 11. Booking Created (payment pending) Email
+  // ============================================================
+  async sendBookingCreatedEmail(params: {
+    email: string;
+    name?: string | null;
+    bookingId: string;
+    standNumber?: string | null;
+    hall?: string | null;
+    category?: string | null;
+    event?: string | null;
+    totalAmount?: number | string | null;
+    currency?: string | null;
+    paymentUrl?: string | null;
+  }) {
+    try {
+      const subject = 'Your Booking is Pending — Complete Your Payment';
+
+      const symbols: Record<string, string> = {
+        usd: '$',
+        eur: '€',
+        gbp: '£',
+        inr: '₹',
+        bdt: '৳',
+      };
+      const cur = (params.currency || 'eur').toLowerCase();
+      const currencySymbol = symbols[cur] || '';
+
+      await this.queue.add('sendBookingCreatedEmail', {
+        to: params.email,
+        subject,
+        template: 'booking-created',
+        context: {
+          name: params.name || 'there',
+          bookingId: params.bookingId,
+          standNumber: params.standNumber || '',
+          hall: params.hall || '',
+          category: params.category || '',
+          event: params.event || '',
+          totalAmount: params.totalAmount ?? '',
+          currencySymbol,
+          paymentUrl: params.paymentUrl || '',
+          appName: process.env.APP_NAME || 'ITBA Expo',
+          year: new Date().getFullYear(),
+        },
+      });
+    } catch (error) {
+      console.error('Error adding sendBookingCreatedEmail to queue:', error);
+    }
+  }
+
+  // ============================================================
+  // 12. Admin Booking Notification (payment completed)
+  // ============================================================
+  async sendAdminBookingNotificationEmail(params: {
+    to: string | string[];
+    bookingId: string;
+    userName?: string | null;
+    companyName?: string | null;
+    userEmail: string;
+    phoneNumber?: string | null;
+    standNumber?: string | null;
+    hall?: string | null;
+    category?: string | null;
+    event?: string | null;
+    totalAmount?: number | string | null | Decimal;
+    currency?: string | null;
+    paidAt?: Date | string | null;
+  }) {
+    try {
+      const recipients = Array.isArray(params.to) ? params.to : [params.to];
+      const subject = `New Paid Booking — Stand ${params.standNumber || params.bookingId}`;
+
+      const symbols: Record<string, string> = {
+        usd: '$',
+        eur: '€',
+        gbp: '£',
+        inr: '₹',
+        bdt: '৳',
+      };
+      const cur = (params.currency || 'eur').toLowerCase();
+      const currencySymbol = symbols[cur] || '';
+
+      const paidAt = params.paidAt
+        ? new Date(params.paidAt).toLocaleString('en-US', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          })
+        : '';
+
+      for (const recipient of recipients) {
+        if (!recipient) continue;
+
+        await this.queue.add('sendAdminBookingNotificationEmail', {
+          to: recipient,
+          subject,
+          template: 'admin-booking-notification',
+          context: {
+            bookingId: params.bookingId,
+            userName: params.userName || 'N/A',
+            companyName: params.companyName || 'N/A',
+            userEmail: params.userEmail,
+            phoneNumber: params.phoneNumber || 'N/A',
+            standNumber: params.standNumber || '',
+            hall: params.hall || '',
+            category: params.category || '',
+            event: params.event || '',
+            totalAmount: params.totalAmount ?? '',
+            currencySymbol,
+            paidAt,
+            appName: process.env.APP_NAME || 'ITBA Expo',
+            year: new Date().getFullYear(),
+          },
+        });
+      }
+    } catch (error) {
+      console.error(
+        'Error adding sendAdminBookingNotificationEmail to queue:',
+        error,
+      );
     }
   }
 }

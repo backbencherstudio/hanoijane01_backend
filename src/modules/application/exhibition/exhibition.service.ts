@@ -61,6 +61,22 @@ export class ExhibitionService {
                     id: true,
                     standNumber: true,
                     title: true,
+                    isAvailable: true,
+                    // ── active bookings fetch (pending / paid) ──
+                    bookings: {
+                      where: {
+                        deletedAt: null,
+                        status: { in: [0, 1] },
+                      },
+                      select: {
+                        id: true,
+                        status: true,
+                        paymentStatus: true,
+                        createdAt: true,
+                      },
+                      orderBy: { createdAt: 'desc' },
+                      take: 1,
+                    },
                   },
                   orderBy: {
                     title: 'asc',
@@ -91,6 +107,21 @@ export class ExhibitionService {
                 size: true,
               },
             },
+            // ── active bookings fetch for map view ──
+            bookings: {
+              where: {
+                deletedAt: null,
+                status: { in: [0, 1] },
+              },
+              select: {
+                id: true,
+                status: true,
+                paymentStatus: true,
+                createdAt: true,
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
           },
           orderBy: {
             title: 'asc',
@@ -102,6 +133,36 @@ export class ExhibitionService {
     if (!exhibition) {
       throw new NotFoundException('No active exhibition found');
     }
+
+    // ── helper: compute stand state ────────────────────────────
+    const computeStandState = (
+      isAvailable: number,
+      activeBooking?: {
+        status: number;
+        paymentStatus: string | null;
+      } | null,
+    ): 'available' | 'pending' | 'booked' => {
+      // already marked unavailable → booked
+      if (isAvailable === 0) return 'booked';
+
+      // no active booking → available
+      if (!activeBooking) return 'available';
+
+      // status 1 = approved/booked
+      if (activeBooking.status === 1) return 'booked';
+
+      // status 0 = pending (unpaid/paid but awaiting approval)
+      if (activeBooking.status === 0) {
+        // if payment canceled/failed/refunded → treat as available
+        const ps = (activeBooking.paymentStatus || '').toLowerCase();
+        if (['canceled', 'failed', 'refunded'].includes(ps)) {
+          return 'available';
+        }
+        return 'pending';
+      }
+
+      return 'available';
+    };
 
     return {
       success: true,
@@ -128,25 +189,47 @@ export class ExhibitionService {
               const totalPrice = Number(
                 (basePrice + basePrice * (vatPct / 100)).toFixed(2),
               );
+
               const sortedStands = [...stands].sort((a, b) =>
-                a.standNumber.localeCompare(b.standNumber, undefined, {
-                  numeric: true,
-                  sensitivity: 'base',
-                }),
+                (a.standNumber ?? '').localeCompare(
+                  b.standNumber ?? '',
+                  undefined,
+                  {
+                    numeric: true,
+                    sensitivity: 'base',
+                  },
+                ),
               );
+
               return {
                 ...standCategory,
                 price: basePrice,
                 vatPercentage: vatPct,
                 totalPrice,
-                stands: sortedStands,
+                stands: sortedStands.map(({ bookings, ...stand }) => {
+                  const activeBooking = bookings?.[0] ?? null;
+                  const state = computeStandState(
+                    stand.isAvailable,
+                    activeBooking,
+                  );
+
+                  return {
+                    id: stand.id,
+                    standNumber: stand.standNumber,
+                    title: stand.title,
+                    state, // 'available' | 'pending' | 'booked'
+                    isAvailable: state === 'available',
+                    isPending: state === 'pending',
+                    isBooked: state === 'booked',
+                  };
+                }),
                 totalStands: _count.stands ?? 0,
               };
             },
           ),
         })),
         stands: exhibition.stands
-          .map(({ category, ...stand }) => {
+          .map(({ category, bookings, ...stand }) => {
             const basePrice = (category?.priceInMinorUnit ?? 0) / 100;
             const vatPct = Number(category?.vatPercentage ?? 0);
             const totalPrice = Number(
@@ -154,9 +237,16 @@ export class ExhibitionService {
             );
             const categoryTitle = category?.title ?? '';
             const categorySlug = category?.slug ?? '';
+
+            const activeBooking = bookings?.[0] ?? null;
+            const state = computeStandState(stand.isAvailable, activeBooking);
+
             return {
               ...stand,
-              isAvailable: stand.isAvailable ? true : false,
+              state, // 'available' | 'pending' | 'booked'
+              isAvailable: state === 'available',
+              isPending: state === 'pending',
+              isBooked: state === 'booked',
               size: category?.size ?? '',
               price: basePrice,
               vatPercentage: vatPct,
@@ -166,10 +256,14 @@ export class ExhibitionService {
             };
           })
           .sort((a, b) =>
-            a.standNumber.localeCompare(b.standNumber, undefined, {
-              numeric: true,
-              sensitivity: 'base',
-            }),
+            (a.standNumber ?? '').localeCompare(
+              b.standNumber ?? '',
+              undefined,
+              {
+                numeric: true,
+                sensitivity: 'base',
+              },
+            ),
           ),
       },
     };
@@ -209,6 +303,20 @@ export class ExhibitionService {
             },
           },
         },
+        // ── active bookings for state ──
+        bookings: {
+          where: {
+            deletedAt: null,
+            status: { in: [0, 1] },
+          },
+          select: {
+            id: true,
+            status: true,
+            paymentStatus: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
 
@@ -216,7 +324,7 @@ export class ExhibitionService {
       throw new NotFoundException(`Stand with ID ${id} not found`);
     }
 
-    const { category, ...rest } = stand;
+    const { category, bookings, ...rest } = stand;
     const restCategory: any = category || {};
     const hall: any = restCategory.hall;
 
@@ -225,11 +333,33 @@ export class ExhibitionService {
     const vatAmount = basePrice * (vatPct / 100);
     const totalPrice = Number((basePrice + vatAmount).toFixed(2));
 
+    // ── compute state ──
+    const activeBooking = bookings?.[0] ?? null;
+    let state: 'available' | 'pending' | 'booked' = 'available';
+
+    if (rest.isAvailable === 0) {
+      state = 'booked';
+    } else if (activeBooking) {
+      if (activeBooking.status === 1) {
+        state = 'booked';
+      } else if (activeBooking.status === 0) {
+        const ps = (activeBooking.paymentStatus || '').toLowerCase();
+        if (['canceled', 'failed', 'refunded'].includes(ps)) {
+          state = 'available';
+        } else {
+          state = 'pending';
+        }
+      }
+    }
+
     return {
       success: true,
       data: {
         ...rest,
-        isAvailable: rest.isAvailable ? true : false,
+        state, // 'available' | 'pending' | 'booked'
+        isAvailable: state === 'available',
+        isPending: state === 'pending',
+        isBooked: state === 'booked',
         category: restCategory.title ?? null,
         price: basePrice,
         vatPercentage: vatPct,
