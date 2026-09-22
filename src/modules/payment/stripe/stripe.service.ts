@@ -168,9 +168,7 @@ export class StripeService {
         return;
       }
 
-      const adminEmails = (
-        process.env.ADMIN_NOTIFICATION_EMAILS || 'office@itba.ie'
-      )
+      const adminEmails = (process.env.MAIL_FROM || 'office@itba.ie')
         .split(',')
         .map((e) => e.trim())
         .filter(Boolean);
