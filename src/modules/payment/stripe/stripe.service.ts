@@ -61,14 +61,19 @@ export class StripeService {
 
     const amount =
       Number(booking.totalAmount) ||
-      (stand?.category?.price ? Number(stand.category.price) : 0);
-    const currency = (booking.currency || 'eur').toLowerCase();
+      (() => {
+        const base = stand?.category?.price ? Number(stand.category.price) : 0;
+        const vatPct = Number(stand?.category?.vatPercentage ?? 0);
+        return Number((base + base * (vatPct / 100)).toFixed(2));
+      })();
 
     if (amount <= 0) {
       throw new BadRequestException(
         'Booking pricing is invalid or 0. Cannot create checkout session.',
       );
     }
+
+    const currency = (booking.currency || 'eur').toLowerCase();
 
     return { booking, stand, amount, currency };
   }

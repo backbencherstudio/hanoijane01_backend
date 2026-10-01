@@ -22,6 +22,8 @@ function generateStandRange(
   return stands;
 }
 
+const VAT_PERCENTAGE = 23;
+
 export const exhibitionSeedStructure = {
   halls: [
     // -------------------------------------------------------------
@@ -36,7 +38,7 @@ export const exhibitionSeedStructure = {
           size: '3m x 2m',
           price: 1750,
           priceInMinorUnit: 175000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16, 17, 18, 19].map(
             (num) => ({
               standNumber: String(num),
@@ -52,7 +54,7 @@ export const exhibitionSeedStructure = {
           size: '6m x 2m, rectangle',
           price: 3000,
           priceInMinorUnit: 300000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: '8',
@@ -69,7 +71,7 @@ export const exhibitionSeedStructure = {
           size: '4m x 2m, rectangle',
           price: 3000,
           priceInMinorUnit: 300000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: '11',
@@ -86,7 +88,7 @@ export const exhibitionSeedStructure = {
           size: '2.5m x 1.5m',
           price: 1250,
           priceInMinorUnit: 125000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: '9',
@@ -111,7 +113,7 @@ export const exhibitionSeedStructure = {
           size: '3m x 2m',
           price: 1250,
           priceInMinorUnit: 125000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: 'M1',
@@ -146,7 +148,7 @@ export const exhibitionSeedStructure = {
           size: '3m x 3m, corner',
           price: 2250,
           priceInMinorUnit: 225000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: 'M2',
@@ -163,7 +165,7 @@ export const exhibitionSeedStructure = {
           size: '3m x 4m, square',
           price: 2700,
           priceInMinorUnit: 270000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: 'M50',
@@ -180,7 +182,7 @@ export const exhibitionSeedStructure = {
           size: '5m x 2m, rectangle',
           price: 2250,
           priceInMinorUnit: 225000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: 'M51',
@@ -197,7 +199,7 @@ export const exhibitionSeedStructure = {
           size: '4m x 3m, corner',
           price: 1600,
           priceInMinorUnit: 160000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: 'M27',
@@ -230,7 +232,7 @@ export const exhibitionSeedStructure = {
           size: 'approx 10m x 5m',
           price: 1500,
           priceInMinorUnit: 150000,
-          vatPercentage: 0,
+          vatPercentage: VAT_PERCENTAGE,
           stands: [
             {
               standNumber: 'O1',
